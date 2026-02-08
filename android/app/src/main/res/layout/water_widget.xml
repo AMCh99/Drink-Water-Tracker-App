@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    android:background="@drawable/widget_background">
+
+    <!-- Mała ikona w lewym górnym rogu -->
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/water_drop"
+        android:tint="#FFFFFF"
+        android:layout_marginEnd="4dp"/>
+
+    <!-- Dane i pasek postępu -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <!-- Tekst z danymi -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/water_amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 ml"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/water_goal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" / 2000 ml"
+                android:textSize="14sp"
+                android:textColor="#CCFFFFFF"
+                android:layout_marginStart="4dp"/>
+
+        </LinearLayout>
+
+        <!-- Pasek postępu -->
+        <ProgressBar
+            android:id="@+id/water_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginTop="4dp"
+            android:progressTint="#FFFFFF"
+            android:progressBackgroundTint="#4DFFFFFF"
+            android:max="100"
+            android:progress="0"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

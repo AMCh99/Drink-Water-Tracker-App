@@ -1,0 +1,77 @@
+class DaySettings {
+  final int? id;
+  final int dayStartHour; // 0-23
+  final int dayStartMinute; // 0-59
+  final int dayEndHour; // 0-23
+  final int dayEndMinute; // 0-59
+  final int dailyGoal; // cel dzienny w ml
+  final String unit; // jednostka: 'ml' lub 'oz'
+  final String themeMode; // 'system', 'light', 'dark'
+
+  DaySettings({
+    this.id,
+    required this.dayStartHour,
+    required this.dayStartMinute,
+    required this.dayEndHour,
+    required this.dayEndMinute,
+    required this.dailyGoal,
+    this.unit = 'ml',
+    this.themeMode = 'system',
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'dayStartHour': dayStartHour,
+      'dayStartMinute': dayStartMinute,
+      'dayEndHour': dayEndHour,
+      'dayEndMinute': dayEndMinute,
+      'dailyGoal': dailyGoal,
+      'unit': unit,
+      'themeMode': themeMode,
+    };
+  }
+
+  factory DaySettings.fromMap(Map<String, dynamic> map) {
+    return DaySettings(
+      id: map['id'] as int?,
+      dayStartHour: map['dayStartHour'] as int,
+      dayStartMinute: map['dayStartMinute'] as int,
+      dayEndHour: map['dayEndHour'] as int,
+      dayEndMinute: map['dayEndMinute'] as int,
+      dailyGoal: map['dailyGoal'] as int? ?? 2000,
+      unit: map['unit'] as String? ?? 'ml',
+      themeMode: map['themeMode'] as String? ?? 'system',
+    );
+  }
+
+  // Konwersja ml na oz (1 oz = 29.5735 ml)
+  double mlToOz(int ml) {
+    return ml / 29.5735;
+  }
+
+  // Konwersja oz na ml
+  int ozToMl(double oz) {
+    return (oz * 29.5735).round();
+  }
+
+  String formatAmount(int ml) {
+    if (unit == 'oz') {
+      return '${mlToOz(ml).toStringAsFixed(1)} oz';
+    }
+    return '$ml ml';
+  }
+
+  // Domyślne ustawienia: dzień 6:00-22:00, cel 2000ml
+  factory DaySettings.defaultSettings() {
+    return DaySettings(
+      dayStartHour: 6,
+      dayStartMinute: 0,
+      dayEndHour: 22,
+      dayEndMinute: 0,
+      dailyGoal: 2000,
+      unit: 'ml',
+      themeMode: 'system',
+    );
+  }
+}
