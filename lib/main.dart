@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'database/database_helper.dart';
 import 'models/water_entry.dart';
 import 'models/day_settings.dart';
 import 'screens/settings_screen.dart';
 import 'screens/add_water_screen.dart';
+import 'screens/stats_screen.dart';
 import 'utils/widget_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('pl');
   runApp(const MyApp());
 }
 
@@ -20,6 +24,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  bool _isOled = false;
   bool _isLoading = true;
 
   @override
@@ -31,6 +36,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadThemeMode() async {
     final settings = await DatabaseHelper.instance.getDaySettings();
     setState(() {
+      _isOled = settings.themeMode == 'oled';
       _themeMode = _stringToThemeMode(settings.themeMode);
       _isLoading = false;
     });
@@ -41,30 +47,17 @@ class _MyAppState extends State<MyApp> {
       case 'light':
         return ThemeMode.light;
       case 'dark':
+      case 'oled':
         return ThemeMode.dark;
       default:
         return ThemeMode.system;
     }
   }
 
-  String _themeModeToString(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'light';
-      case ThemeMode.dark:
-        return 'dark';
-      default:
-        return 'system';
-    }
-  }
-
-  Future<void> _toggleTheme() async {
-    final newThemeMode = _themeMode == ThemeMode.light
-        ? ThemeMode.dark
-        : ThemeMode.light;
-
+  Future<void> _setTheme(String mode) async {
     setState(() {
-      _themeMode = newThemeMode;
+      _isOled = mode == 'oled';
+      _themeMode = _stringToThemeMode(mode);
     });
 
     // Zapisz do bazy danych
@@ -77,7 +70,7 @@ class _MyAppState extends State<MyApp> {
       dayEndMinute: settings.dayEndMinute,
       dailyGoal: settings.dailyGoal,
       unit: settings.unit,
-      themeMode: _themeModeToString(newThemeMode),
+      themeMode: mode,
     );
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
@@ -100,23 +93,54 @@ class _MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      darkTheme: _isOled
+          ? ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.dark,
+                surface: Colors.black,
+              ),
+              scaffoldBackgroundColor: Colors.black,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.black,
+                surfaceTintColor: Colors.black,
+              ),
+              cardTheme: const CardThemeData(color: Color(0xFF121212)),
+              dialogTheme: const DialogThemeData(
+                backgroundColor: Color(0xFF121212),
+              ),
+              bottomSheetTheme: const BottomSheetThemeData(
+                backgroundColor: Color(0xFF121212),
+              ),
+              useMaterial3: true,
+            )
+          : ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
       themeMode: _themeMode,
-      home: WaterTrackerHome(onToggleTheme: _toggleTheme),
+      home: WaterTrackerHome(
+        onThemeChanged: _setTheme,
+        currentThemeMode: _isOled
+            ? 'oled'
+            : (_themeMode == ThemeMode.light ? 'light' : 'dark'),
+      ),
     );
   }
 }
 
 class WaterTrackerHome extends StatefulWidget {
-  final Future<void> Function() onToggleTheme;
+  final Future<void> Function(String) onThemeChanged;
+  final String currentThemeMode;
 
-  const WaterTrackerHome({super.key, required this.onToggleTheme});
+  const WaterTrackerHome({
+    super.key,
+    required this.onThemeChanged,
+    required this.currentThemeMode,
+  });
 
   @override
   State<WaterTrackerHome> createState() => _WaterTrackerHomeState();
@@ -232,8 +256,8 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       context,
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
-          onToggleTheme: widget.onToggleTheme,
-          currentBrightness: Theme.of(context).brightness,
+          onThemeChanged: widget.onThemeChanged,
+          currentThemeMode: widget.currentThemeMode,
         ),
       ),
     ).then((_) => _loadData()); // Odśwież dane po powrocie z ustawień
@@ -250,6 +274,16 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
         title: const Text('Drink water'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Statystyki',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StatsScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _openSettings,
           ),
@@ -265,16 +299,22 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                colors:
+                    Theme.of(context).scaffoldBackgroundColor == Colors.black
+                    ? [const Color(0xFF0D1B2A), const Color(0xFF1B2838)]
+                    : [Colors.blue.shade400, Colors.blue.shade600],
               ),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+              boxShadow:
+                  Theme.of(context).scaffoldBackgroundColor == Colors.black
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
             ),
             child: Column(
               children: [
@@ -339,8 +379,12 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                         'Dodaj ponownie ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue.shade600,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

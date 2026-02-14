@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import '../models/water_entry.dart';
 import '../models/day_settings.dart';
 import '../models/water_button.dart';
+import '../models/daily_stats.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -228,33 +229,16 @@ class DatabaseHelper {
     return results.map((map) => WaterEntry.fromMap(map)).toList();
   }
 
-  // Oblicza godzinę resetu licznika (środek nocy)
+  // Oblicza godzinę resetu licznika (3 godziny po końcu dnia)
   TimeOfDay _calculateResetTime(DaySettings settings) {
-    // Obliczamy ile godzin jest między końcem dnia a początkiem następnego
-    int hoursFromEndToStart;
+    int resetHour = settings.dayEndHour + 3;
+    int resetMinute = settings.dayEndMinute;
 
-    if (settings.dayEndHour < settings.dayStartHour) {
-      // Koniec i początek są w tym samym dniu (np. 8:00 - 22:00)
-      hoursFromEndToStart = (24 - settings.dayEndHour) + settings.dayStartHour;
-    } else {
-      // Przechodzimy przez północ (np. 22:00 - 8:00)
-      hoursFromEndToStart = settings.dayStartHour - settings.dayEndHour;
-    }
-
-    // Połowa czasu snu
-    final minutesFromEnd = (hoursFromEndToStart * 60) ~/ 2;
-
-    // Obliczamy godzinę resetu od końca dnia
-    int resetHour = settings.dayEndHour;
-    int resetMinute = settings.dayEndMinute + minutesFromEnd;
-
-    // Normalizujemy minuty i godziny
-    resetHour += resetMinute ~/ 60;
-    resetMinute = resetMinute % 60;
+    // Normalizujemy godziny (np. 22+3=25 -> 1:00)
     resetHour = resetHour % 24;
 
     print(
-      'DEBUG: Reset o godzinie $resetHour:$resetMinute (między ${settings.dayEndHour}:${settings.dayEndMinute} a ${settings.dayStartHour}:${settings.dayStartMinute})',
+      'DEBUG: Reset o godzinie $resetHour:${resetMinute.toString().padLeft(2, '0')} (3h po końcu dnia ${settings.dayEndHour}:${settings.dayEndMinute.toString().padLeft(2, '0')})',
     );
 
     return TimeOfDay(hour: resetHour, minute: resetMinute);
@@ -317,6 +301,54 @@ class DatabaseHelper {
   Future<int> deleteWaterEntry(int id) async {
     final db = await database;
     return await db.delete('water_entries', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Statystyki tygodniowe - zwraca dane z ostatnich 7 dni
+  Future<List<DailyStats>> getWeeklyStats() async {
+    final settings = await getDaySettings();
+    final now = DateTime.now();
+    final List<DailyStats> stats = [];
+
+    for (int i = 6; i >= 0; i--) {
+      final day = DateTime(now.year, now.month, now.day - i, 12, 0);
+      final total = await getTotalWaterForDay(day);
+      stats.add(
+        DailyStats(
+          date: DateTime(day.year, day.month, day.day),
+          totalMl: total,
+          goalMl: settings.dailyGoal,
+        ),
+      );
+    }
+
+    return stats;
+  }
+
+  Future<List<DailyStats>> getMonthlyStats(int year, int month) async {
+    final settings = await getDaySettings();
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final List<DailyStats> stats = [];
+
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      // Nie pobieraj danych dla przyszłych dni
+      if (date.isAfter(today)) {
+        stats.add(
+          DailyStats(date: date, totalMl: -1, goalMl: settings.dailyGoal),
+        );
+        continue;
+      }
+      final total = await getTotalWaterForDay(
+        DateTime(year, month, day, 12, 0),
+      );
+      stats.add(
+        DailyStats(date: date, totalMl: total, goalMl: settings.dailyGoal),
+      );
+    }
+
+    return stats;
   }
 
   // CRUD dla day_settings

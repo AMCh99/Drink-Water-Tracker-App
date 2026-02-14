@@ -3,13 +3,13 @@ import '../database/database_helper.dart';
 import '../models/day_settings.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final Future<void> Function() onToggleTheme;
-  final Brightness currentBrightness;
+  final Future<void> Function(String) onThemeChanged;
+  final String currentThemeMode;
 
   const SettingsScreen({
     super.key,
-    required this.onToggleTheme,
-    required this.currentBrightness,
+    required this.onThemeChanged,
+    required this.currentThemeMode,
   });
 
   @override
@@ -214,6 +214,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showThemeDialog() async {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Wybierz motyw'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text('Jasny'),
+                secondary: const Icon(Icons.light_mode),
+                value: 'light',
+                groupValue: widget.currentThemeMode,
+                onChanged: (value) {
+                  widget.onThemeChanged(value!);
+                  Navigator.pop(context);
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Ciemny'),
+                secondary: const Icon(Icons.dark_mode),
+                value: 'dark',
+                groupValue: widget.currentThemeMode,
+                onChanged: (value) {
+                  widget.onThemeChanged(value!);
+                  Navigator.pop(context);
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('OLED Dark'),
+                subtitle: const Text('Całkowicie czarne tło'),
+                secondary: const Icon(Icons.brightness_1),
+                value: 'oled',
+                groupValue: widget.currentThemeMode,
+                onChanged: (value) {
+                  widget.onThemeChanged(value!);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -240,22 +287,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: Icon(
-              widget.currentBrightness == Brightness.dark
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
+              widget.currentThemeMode == 'light'
+                  ? Icons.light_mode
+                  : widget.currentThemeMode == 'oled'
+                  ? Icons.brightness_1
+                  : Icons.dark_mode,
             ),
             title: const Text('Motyw'),
             subtitle: Text(
-              widget.currentBrightness == Brightness.dark ? 'Ciemny' : 'Jasny',
+              widget.currentThemeMode == 'light'
+                  ? 'Jasny'
+                  : widget.currentThemeMode == 'oled'
+                  ? 'OLED Dark'
+                  : 'Ciemny',
             ),
-            trailing: Switch(
-              value: widget.currentBrightness == Brightness.dark,
-              onChanged: (value) {
-                widget.onToggleTheme();
-                setState(() {}); // Odśwież UI
-              },
-            ),
-            onTap: widget.onToggleTheme,
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _showThemeDialog(),
           ),
           const Divider(),
           const Padding(
@@ -278,6 +325,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: _showDayTimeDialog,
+          ),
+          ListTile(
+            leading: const Icon(Icons.restart_alt),
+            title: const Text('Reset licznika'),
+            subtitle: Text(
+              'Codziennie o ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} (3h po końcu dnia)',
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.flag),
