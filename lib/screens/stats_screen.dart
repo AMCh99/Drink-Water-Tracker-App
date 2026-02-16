@@ -5,6 +5,7 @@ import '../database/database_helper.dart';
 import '../models/daily_stats.dart';
 import '../models/day_settings.dart';
 import '../utils/app_localizations.dart';
+import '../widgets/glass_container.dart';
 
 class StatsScreen extends StatefulWidget {
   final AppLocalizations t;
@@ -88,23 +89,28 @@ class _StatsScreenState extends State<StatsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.t.get('statsTitle')),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(icon: const Icon(Icons.bar_chart), text: widget.t.get('week')),
-            Tab(
-              icon: const Icon(Icons.calendar_month),
-              text: widget.t.get('month'),
-            ),
-          ],
+    return LiquidGlassBackground(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.t.get('statsTitle')),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.bar_chart),
+                text: widget.t.get('week'),
+              ),
+              Tab(
+                icon: const Icon(Icons.calendar_month),
+                text: widget.t.get('month'),
+              ),
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildWeeklyTab(), _buildMonthlyTab()],
+        body: TabBarView(
+          controller: _tabController,
+          children: [_buildWeeklyTab(), _buildMonthlyTab()],
+        ),
       ),
     );
   }
@@ -156,54 +162,56 @@ class _StatsScreenState extends State<StatsScreen>
     return Row(
       children: [
         Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Icon(Icons.water_drop, color: Colors.blue, size: 32),
-                  const SizedBox(height: 8),
-                  Text(
-                    _settings?.formatAmount(avgMl) ?? '$avgMl ml',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+          child: GlassContainer(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.all(16),
+            borderRadius: 16,
+            blur: 12,
+            child: Column(
+              children: [
+                const Icon(Icons.water_drop, color: Colors.blue, size: 32),
+                const SizedBox(height: 8),
+                Text(
+                  _settings?.formatAmount(avgMl) ?? '$avgMl ml',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Text(
-                    widget.t.get('avgDaily'),
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
+                ),
+                Text(
+                  widget.t.get('avgDaily'),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ),
         Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Icon(
-                    daysGoalReached >= 5 ? Icons.emoji_events : Icons.flag,
-                    color: daysGoalReached >= 5 ? Colors.amber : Colors.green,
-                    size: 32,
+          child: GlassContainer(
+            margin: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsets.all(16),
+            borderRadius: 16,
+            blur: 12,
+            child: Column(
+              children: [
+                Icon(
+                  daysGoalReached >= 5 ? Icons.emoji_events : Icons.flag,
+                  color: daysGoalReached >= 5 ? Colors.amber : Colors.green,
+                  size: 32,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$daysGoalReached / 7',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$daysGoalReached / 7',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    widget.t.get('goalReached'),
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
+                ),
+                Text(
+                  widget.t.get('goalReached'),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ),
