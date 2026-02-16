@@ -7,6 +7,7 @@ class DaySettings {
   final int dailyGoal; // cel dzienny w ml
   final String unit; // jednostka: 'ml' lub 'oz'
   final String themeMode; // 'system', 'light', 'dark'
+  final String language; // 'pl', 'en'
 
   DaySettings({
     this.id,
@@ -17,6 +18,7 @@ class DaySettings {
     required this.dailyGoal,
     this.unit = 'ml',
     this.themeMode = 'system',
+    this.language = 'pl',
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +31,7 @@ class DaySettings {
       'dailyGoal': dailyGoal,
       'unit': unit,
       'themeMode': themeMode,
+      'language': language,
     };
   }
 
@@ -42,6 +45,7 @@ class DaySettings {
       dailyGoal: map['dailyGoal'] as int? ?? 2000,
       unit: map['unit'] as String? ?? 'ml',
       themeMode: map['themeMode'] as String? ?? 'system',
+      language: map['language'] as String? ?? 'pl',
     );
   }
 
@@ -72,6 +76,7 @@ class DaySettings {
       dailyGoal: 2000,
       unit: 'ml',
       themeMode: 'system',
+      language: 'pl',
     );
   }
 }

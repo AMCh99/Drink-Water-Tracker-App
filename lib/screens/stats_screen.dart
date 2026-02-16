@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import '../database/database_helper.dart';
 import '../models/daily_stats.dart';
 import '../models/day_settings.dart';
+import '../utils/app_localizations.dart';
 
 class StatsScreen extends StatefulWidget {
-  const StatsScreen({super.key});
+  final AppLocalizations t;
+
+  const StatsScreen({super.key, required this.t});
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -87,12 +90,15 @@ class _StatsScreenState extends State<StatsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statystyki'),
+        title: Text(widget.t.get('statsTitle')),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.bar_chart), text: 'Tydzień'),
-            Tab(icon: Icon(Icons.calendar_month), text: 'Miesiąc'),
+          tabs: [
+            Tab(icon: const Icon(Icons.bar_chart), text: widget.t.get('week')),
+            Tab(
+              icon: const Icon(Icons.calendar_month),
+              text: widget.t.get('month'),
+            ),
           ],
         ),
       ),
@@ -133,9 +139,9 @@ class _StatsScreenState extends State<StatsScreen>
         children: [
           _buildSummaryCards(avgMl, daysGoalReached),
           const SizedBox(height: 24),
-          const Text(
-            'Ostatnie 7 dni',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            widget.t.get('last7Days'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           SizedBox(height: 280, child: _buildChart(chartMax, goalMl)),
@@ -164,9 +170,9 @@ class _StatsScreenState extends State<StatsScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
-                    'Średnio dziennie',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  Text(
+                    widget.t.get('avgDaily'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
               ),
@@ -192,9 +198,9 @@ class _StatsScreenState extends State<StatsScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
-                    'Cel osiągnięty',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  Text(
+                    widget.t.get('goalReached'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
               ),
@@ -234,7 +240,10 @@ class _StatsScreenState extends State<StatsScreen>
               getTitlesWidget: (value, meta) {
                 if (value.toInt() >= 0 && value.toInt() < _weeklyStats.length) {
                   final date = _weeklyStats[value.toInt()].date;
-                  final dayName = DateFormat('E', 'pl').format(date);
+                  final dayName = DateFormat(
+                    'E',
+                    widget.t.dateLocale,
+                  ).format(date);
                   final isToday = _isToday(date);
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -300,7 +309,7 @@ class _StatsScreenState extends State<StatsScreen>
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
-                labelResolver: (line) => 'Cel',
+                labelResolver: (line) => widget.t.get('goal'),
               ),
             ),
           ],
@@ -335,14 +344,14 @@ class _StatsScreenState extends State<StatsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Szczegóły',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          widget.t.get('details'),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         ...List.generate(_weeklyStats.length, (index) {
           final stat = _weeklyStats[_weeklyStats.length - 1 - index];
-          final dayFormat = DateFormat('EEEE, d MMM', 'pl');
+          final dayFormat = DateFormat('EEEE, d MMM', widget.t.dateLocale);
           final isToday = _isToday(stat.date);
 
           return ListTile(
@@ -356,7 +365,7 @@ class _StatsScreenState extends State<StatsScreen>
               ),
             ),
             title: Text(
-              isToday ? 'Dzisiaj' : dayFormat.format(stat.date),
+              isToday ? widget.t.get('today') : dayFormat.format(stat.date),
               style: TextStyle(
                 fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
               ),
@@ -393,7 +402,7 @@ class _StatsScreenState extends State<StatsScreen>
         _selectedYear == now.year && _selectedMonth == now.month;
     final monthName = DateFormat(
       'LLLL yyyy',
-      'pl',
+      widget.t.dateLocale,
     ).format(DateTime(_selectedYear, _selectedMonth));
 
     // Statystyki miesiąca (tylko przeszłe/dzisiejsze dni)
@@ -430,7 +439,7 @@ class _StatsScreenState extends State<StatsScreen>
 
           // Podsumowanie
           Text(
-            'Cel osiągnięty: $daysReached / $totalDays dni',
+            '${widget.t.get('goalReachedDays')} $daysReached / $totalDays ${widget.t.get('days')}',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 20),
@@ -452,7 +461,15 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   Widget _buildWeekdayHeaders() {
-    const weekdays = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+    final weekdays = [
+      widget.t.get('weekdayMon'),
+      widget.t.get('weekdayTue'),
+      widget.t.get('weekdayWed'),
+      widget.t.get('weekdayThu'),
+      widget.t.get('weekdayFri'),
+      widget.t.get('weekdaySat'),
+      widget.t.get('weekdaySun'),
+    ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekdays
@@ -570,9 +587,9 @@ class _StatsScreenState extends State<StatsScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _legendItem(Colors.green.shade400, 'Cel osiągnięty'),
+        _legendItem(Colors.green.shade400, widget.t.get('goalReachedLegend')),
         const SizedBox(width: 24),
-        _legendItem(Colors.grey.shade400, 'Cel nieosiągnięty'),
+        _legendItem(Colors.grey.shade400, widget.t.get('goalNotReachedLegend')),
       ],
     );
   }

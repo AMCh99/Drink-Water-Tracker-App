@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -55,7 +55,8 @@ class DatabaseHelper {
         dayEndMinute INTEGER NOT NULL,
         dailyGoal INTEGER NOT NULL DEFAULT 2000,
         unit TEXT NOT NULL DEFAULT 'ml',
-        themeMode TEXT NOT NULL DEFAULT 'system'
+        themeMode TEXT NOT NULL DEFAULT 'system',
+        language TEXT NOT NULL DEFAULT 'pl'
       )
     ''');
 
@@ -132,6 +133,13 @@ class DatabaseHelper {
       // Dodaj kolumnę themeMode do istniejącej tabeli day_settings
       await db.execute('''
         ALTER TABLE day_settings ADD COLUMN themeMode TEXT NOT NULL DEFAULT 'system'
+      ''');
+    }
+
+    if (oldVersion < 7) {
+      // Dodaj kolumnę language do istniejącej tabeli day_settings
+      await db.execute('''
+        ALTER TABLE day_settings ADD COLUMN language TEXT NOT NULL DEFAULT 'pl'
       ''');
     }
   }

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/day_settings.dart';
+import '../utils/app_localizations.dart';
 import '../widgets/glass_container.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Future<void> Function(String) onThemeChanged;
+  final Future<void> Function(String) onLanguageChanged;
   final String currentThemeMode;
+  final AppLocalizations t;
 
   const SettingsScreen({
     super.key,
     required this.onThemeChanged,
+    required this.onLanguageChanged,
     required this.currentThemeMode,
+    required this.t,
   });
 
   @override
@@ -55,12 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Godziny dnia'),
+              title: Text(widget.t.get('dayHours')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    title: const Text('Początek dnia'),
+                    title: Text(widget.t.get('dayStart')),
                     trailing: Text(
                       startTime.format(context),
                       style: const TextStyle(
@@ -81,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   ListTile(
-                    title: const Text('Koniec dnia'),
+                    title: Text(widget.t.get('dayEnd')),
                     trailing: Text(
                       endTime.format(context),
                       style: const TextStyle(
@@ -106,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Anuluj'),
+                  child: Text(widget.t.get('cancel')),
                 ),
                 FilledButton(
                   onPressed: () async {
@@ -118,12 +123,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       dayEndMinute: endTime.minute,
                       dailyGoal: _settings!.dailyGoal,
                       unit: _settings!.unit,
+                      themeMode: _settings!.themeMode,
+                      language: _settings!.language,
                     );
                     await _dbHelper.updateDaySettings(updatedSettings);
                     await _loadSettings();
                     if (context.mounted) Navigator.pop(context);
                   },
-                  child: const Text('Zapisz'),
+                  child: Text(widget.t.get('save')),
                 ),
               ],
             );
@@ -144,21 +151,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Dzienny cel'),
+          title: Text(widget.t.get('dailyGoal')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Ile mililitrów wody chcesz wypijać dziennie?',
-                style: TextStyle(fontSize: 14),
+              Text(
+                widget.t.get('dailyGoalQuestion'),
+                style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Cel (ml)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: widget.t.get('goalMl'),
+                  border: const OutlineInputBorder(),
                   suffixText: 'ml',
                 ),
                 autofocus: true,
@@ -178,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Anuluj'),
+              child: Text(widget.t.get('cancel')),
             ),
             FilledButton(
               onPressed: () async {
@@ -192,13 +199,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     dayEndMinute: _settings!.dayEndMinute,
                     dailyGoal: goal,
                     unit: _settings!.unit,
+                    themeMode: _settings!.themeMode,
+                    language: _settings!.language,
                   );
                   await _dbHelper.updateDaySettings(updatedSettings);
                   await _loadSettings();
                   if (context.mounted) Navigator.pop(context);
                 }
               },
-              child: const Text('Zapisz'),
+              child: Text(widget.t.get('save')),
             ),
           ],
         );
@@ -220,12 +229,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Wybierz motyw'),
+          title: Text(widget.t.get('chooseTheme')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<String>(
-                title: const Text('Jasny'),
+                title: Text(widget.t.get('themeLight')),
                 secondary: const Icon(Icons.light_mode),
                 value: 'light',
                 groupValue: widget.currentThemeMode,
@@ -235,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               RadioListTile<String>(
-                title: const Text('Ciemny'),
+                title: Text(widget.t.get('themeDark')),
                 secondary: const Icon(Icons.dark_mode),
                 value: 'dark',
                 groupValue: widget.currentThemeMode,
@@ -245,8 +254,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               RadioListTile<String>(
-                title: const Text('OLED Dark'),
-                subtitle: const Text('Całkowicie czarne tło'),
+                title: Text(widget.t.get('themeOled')),
+                subtitle: Text(widget.t.get('themeOledSubtitle')),
                 secondary: const Icon(Icons.brightness_1),
                 value: 'oled',
                 groupValue: widget.currentThemeMode,
@@ -262,26 +271,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showLanguageDialog() async {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(widget.t.get('chooseLanguage')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text('Polski'),
+                secondary: const Text('🇵🇱', style: TextStyle(fontSize: 24)),
+                value: 'pl',
+                groupValue: _settings?.language ?? 'pl',
+                onChanged: (value) {
+                  widget.onLanguageChanged(value!);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('English'),
+                secondary: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
+                value: 'en',
+                groupValue: _settings?.language ?? 'pl',
+                onChanged: (value) {
+                  widget.onLanguageChanged(value!);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Opcje')),
+        appBar: AppBar(title: Text(widget.t.get('settings'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return LiquidGlassBackground(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Opcje')),
+        appBar: AppBar(title: Text(widget.t.get('settings'))),
         body: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 4, top: 16, bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
               child: Text(
-                'Wygląd',
-                style: TextStyle(
+                widget.t.get('appearance'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey,
@@ -292,34 +339,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: 16,
               blur: 12,
               padding: EdgeInsets.zero,
-              child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                leading: Icon(
-                  widget.currentThemeMode == 'light'
-                      ? Icons.light_mode_rounded
-                      : widget.currentThemeMode == 'oled'
-                      ? Icons.brightness_1_rounded
-                      : Icons.dark_mode_rounded,
-                ),
-                title: const Text('Motyw'),
-                subtitle: Text(
-                  widget.currentThemeMode == 'light'
-                      ? 'Jasny'
-                      : widget.currentThemeMode == 'oled'
-                      ? 'OLED Dark'
-                      : 'Ciemny',
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                onTap: () => _showThemeDialog(),
+              child: Column(
+                children: [
+                  ListTile(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
+                    leading: Icon(
+                      widget.currentThemeMode == 'light'
+                          ? Icons.light_mode_rounded
+                          : widget.currentThemeMode == 'oled'
+                          ? Icons.brightness_1_rounded
+                          : Icons.dark_mode_rounded,
+                    ),
+                    title: Text(widget.t.get('theme')),
+                    subtitle: Text(
+                      widget.currentThemeMode == 'light'
+                          ? widget.t.get('themeLight')
+                          : widget.currentThemeMode == 'oled'
+                          ? widget.t.get('themeOled')
+                          : widget.t.get('themeDark'),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                    ),
+                    onTap: () => _showThemeDialog(),
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ),
+                  ListTile(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(16),
+                      ),
+                    ),
+                    leading: const Icon(Icons.language_rounded),
+                    title: Text(widget.t.get('language')),
+                    subtitle: Text(
+                      AppLocalizations.languageName(
+                        _settings?.language ?? 'pl',
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                    ),
+                    onTap: () => _showLanguageDialog(),
+                  ),
+                ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(left: 4, top: 20, bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
               child: Text(
-                'Dzień',
-                style: TextStyle(
+                widget.t.get('day'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey,
@@ -339,7 +422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     leading: const Icon(Icons.schedule_rounded),
-                    title: const Text('Godziny dnia'),
+                    title: Text(widget.t.get('dayHours')),
                     subtitle: Text(
                       '${_settings!.dayStartHour.toString().padLeft(2, '0')}:${_settings!.dayStartMinute.toString().padLeft(2, '0')} - '
                       '${_settings!.dayEndHour.toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')}',
@@ -360,9 +443,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.restart_alt_rounded),
-                    title: const Text('Reset licznika'),
+                    title: Text(widget.t.get('counterReset')),
                     subtitle: Text(
-                      'Codziennie o ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} (3h po końcu dnia)',
+                      '${widget.t.get('counterResetSubtitle')} ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} ${widget.t.get('counterResetAfter')}',
                     ),
                   ),
                   Divider(
@@ -375,7 +458,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.flag_rounded),
-                    title: const Text('Dzienny cel'),
+                    title: Text(widget.t.get('dailyGoal')),
                     subtitle: Text(
                       _settings!.formatAmount(_settings!.dailyGoal),
                     ),
@@ -400,9 +483,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     leading: const Icon(Icons.straighten_rounded),
-                    title: const Text('Jednostki'),
+                    title: Text(widget.t.get('units')),
                     subtitle: Text(
-                      _settings!.unit == 'ml' ? 'Mililitry (ml)' : 'Uncje (oz)',
+                      _settings!.unit == 'ml'
+                          ? widget.t.get('unitsMl')
+                          : widget.t.get('unitsOz'),
                     ),
                     trailing: Switch(
                       value: _settings!.unit == 'oz',
@@ -415,6 +500,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           dayEndMinute: _settings!.dayEndMinute,
                           dailyGoal: _settings!.dailyGoal,
                           unit: value ? 'oz' : 'ml',
+                          themeMode: _settings!.themeMode,
+                          language: _settings!.language,
                         );
                         await _dbHelper.updateDaySettings(updatedSettings);
                         await _loadSettings();
@@ -424,11 +511,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(left: 4, top: 20, bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
               child: Text(
-                'Informacje',
-                style: TextStyle(
+                widget.t.get('info'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey,
@@ -444,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 leading: const Icon(Icons.info_outline_rounded),
-                title: const Text('O aplikacji'),
+                title: Text(widget.t.get('aboutApp')),
                 subtitle: const Text('Drink Water Tracker v1.0'),
                 onTap: () {
                   showAboutDialog(
@@ -456,11 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       size: 48,
                       color: Colors.blue,
                     ),
-                    children: [
-                      const Text(
-                        'Prosta aplikacja do śledzenia ilości wypijanej wody.',
-                      ),
-                    ],
+                    children: [Text(widget.t.get('aboutAppDescription'))],
                   );
                 },
               ),

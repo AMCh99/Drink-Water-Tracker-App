@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/water_button.dart';
 import '../models/water_entry.dart';
+import '../utils/app_localizations.dart';
 import '../widgets/glass_container.dart';
 
 class AddWaterScreen extends StatefulWidget {
-  const AddWaterScreen({super.key});
+  final AppLocalizations t;
+
+  const AddWaterScreen({super.key, required this.t});
 
   @override
   State<AddWaterScreen> createState() => _AddWaterScreenState();
@@ -53,21 +56,21 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Nowa ilość'),
+          title: Text(widget.t.get('newAmount')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Podaj ilość wody i dodaj jako przycisk',
-                style: TextStyle(fontSize: 14),
+              Text(
+                widget.t.get('enterAmountAndAdd'),
+                style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Ilość (ml)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: widget.t.get('amountMl'),
+                  border: const OutlineInputBorder(),
                   suffixText: 'ml',
                 ),
                 autofocus: true,
@@ -77,7 +80,7 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Anuluj'),
+              child: Text(widget.t.get('cancel')),
             ),
             FilledButton(
               onPressed: () async {
@@ -104,14 +107,14 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Dodano przycisk ${ml}ml'),
+                        content: Text('${widget.t.get('addedButton')} ${ml}ml'),
                         duration: const Duration(seconds: 2),
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Dodaj przycisk'),
+              child: Text(widget.t.get('addButton')),
             ),
           ],
         );
@@ -123,14 +126,14 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Dodaj wodę')),
+        appBar: AppBar(title: Text(widget.t.get('addWaterTitle'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return LiquidGlassBackground(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Dodaj wodę')),
+        appBar: AppBar(title: Text(widget.t.get('addWaterTitle'))),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -169,7 +172,7 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Dodaj własną ilość',
+                          widget.t.get('addCustomAmount'),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w600,

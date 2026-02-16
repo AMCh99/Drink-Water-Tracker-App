@@ -9,11 +9,13 @@ import 'screens/settings_screen.dart';
 import 'screens/add_water_screen.dart';
 import 'screens/stats_screen.dart';
 import 'utils/widget_helper.dart';
+import 'utils/app_localizations.dart';
 import 'widgets/glass_container.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pl');
+  await initializeDateFormatting('en_US');
   runApp(const MyApp());
 }
 
@@ -28,18 +30,24 @@ class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
   bool _isOled = false;
   bool _isLoading = true;
+  String _language = 'pl';
+
+  late AppLocalizations t;
 
   @override
   void initState() {
     super.initState();
-    _loadThemeMode();
+    t = AppLocalizations(_language);
+    _loadSettings();
   }
 
-  Future<void> _loadThemeMode() async {
+  Future<void> _loadSettings() async {
     final settings = await DatabaseHelper.instance.getDaySettings();
     setState(() {
       _isOled = settings.themeMode == 'oled';
       _themeMode = _stringToThemeMode(settings.themeMode);
+      _language = settings.language;
+      t = AppLocalizations(_language);
       _isLoading = false;
     });
   }
@@ -62,7 +70,6 @@ class _MyAppState extends State<MyApp> {
       _themeMode = _stringToThemeMode(mode);
     });
 
-    // Zapisz do bazy danych
     final settings = await DatabaseHelper.instance.getDaySettings();
     final updatedSettings = DaySettings(
       id: settings.id,
@@ -73,6 +80,28 @@ class _MyAppState extends State<MyApp> {
       dailyGoal: settings.dailyGoal,
       unit: settings.unit,
       themeMode: mode,
+      language: settings.language,
+    );
+    await DatabaseHelper.instance.updateDaySettings(updatedSettings);
+  }
+
+  Future<void> _setLanguage(String lang) async {
+    setState(() {
+      _language = lang;
+      t = AppLocalizations(lang);
+    });
+
+    final settings = await DatabaseHelper.instance.getDaySettings();
+    final updatedSettings = DaySettings(
+      id: settings.id,
+      dayStartHour: settings.dayStartHour,
+      dayStartMinute: settings.dayStartMinute,
+      dayEndHour: settings.dayEndHour,
+      dayEndMinute: settings.dayEndMinute,
+      dailyGoal: settings.dailyGoal,
+      unit: settings.unit,
+      themeMode: settings.themeMode,
+      language: lang,
     );
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
@@ -145,9 +174,11 @@ class _MyAppState extends State<MyApp> {
       themeMode: _themeMode,
       home: WaterTrackerHome(
         onThemeChanged: _setTheme,
+        onLanguageChanged: _setLanguage,
         currentThemeMode: _isOled
             ? 'oled'
             : (_themeMode == ThemeMode.light ? 'light' : 'dark'),
+        t: t,
       ),
     );
   }
@@ -155,12 +186,16 @@ class _MyAppState extends State<MyApp> {
 
 class WaterTrackerHome extends StatefulWidget {
   final Future<void> Function(String) onThemeChanged;
+  final Future<void> Function(String) onLanguageChanged;
   final String currentThemeMode;
+  final AppLocalizations t;
 
   const WaterTrackerHome({
     super.key,
     required this.onThemeChanged,
+    required this.onLanguageChanged,
     required this.currentThemeMode,
+    required this.t,
   });
 
   @override
@@ -232,7 +267,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Dodano ${_daySettings?.formatAmount(_lastEntry!.milliliters) ?? "${_lastEntry!.milliliters} ml"}',
+            '${widget.t.get('added')} ${_daySettings?.formatAmount(_lastEntry!.milliliters) ?? "${_lastEntry!.milliliters} ml"}',
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -252,7 +287,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Dodano ${_daySettings?.formatAmount(milliliters) ?? "$milliliters ml"}',
+            '${widget.t.get('added')} ${_daySettings?.formatAmount(milliliters) ?? "$milliliters ml"}',
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -263,7 +298,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   void _openAddWaterScreen() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AddWaterScreen()),
+      MaterialPageRoute(builder: (context) => AddWaterScreen(t: widget.t)),
     );
 
     // Jeśli result == true, oznacza że woda została dodana
@@ -278,10 +313,12 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
           onThemeChanged: widget.onThemeChanged,
+          onLanguageChanged: widget.onLanguageChanged,
           currentThemeMode: widget.currentThemeMode,
+          t: widget.t,
         ),
       ),
-    ).then((_) => _loadData()); // Odśwież dane po powrocie z ustawień
+    ).then((_) => _loadData());
   }
 
   @override
@@ -293,18 +330,20 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     return LiquidGlassBackground(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Drink water',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          title: Text(
+            widget.t.get('appTitle'),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           actions: [
             IconButton(
               icon: const Icon(Icons.bar_chart_rounded),
-              tooltip: 'Statystyki',
+              tooltip: widget.t.get('statistics'),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const StatsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => StatsScreen(t: widget.t),
+                  ),
                 );
               },
             ),
@@ -346,7 +385,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                   const SizedBox(height: 8),
                   if (_daySettings != null) ...[
                     Text(
-                      'z ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
+                      '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
                       style: TextStyle(
                         fontSize: 18,
                         color: Theme.of(
@@ -405,7 +444,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${(progress * 100).toStringAsFixed(0)}% celu',
+                      '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -440,7 +479,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Dodaj ponownie ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                                  '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
                                   style: TextStyle(
                                     color: Theme.of(
                                       context,
@@ -463,7 +502,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               child: _entries.isEmpty
                   ? Center(
                       child: Text(
-                        'Brak wpisów na dzisiaj.\nDodaj swoją pierwszą wodę!',
+                        widget.t.get('noEntriesToday'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Theme.of(
@@ -502,7 +541,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Dodaj wodę',
+                    widget.t.get('addWater'),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
@@ -528,13 +567,13 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     if (status == 'early') {
       statusWidget = _buildStatusChip(
         Icons.wb_sunny_rounded,
-        'Wcześnie! 👏',
+        widget.t.get('earlyStatus'),
         Colors.green,
       );
     } else if (status == 'late') {
       statusWidget = _buildStatusChip(
         Icons.bedtime_rounded,
-        'Pora spać! 😴',
+        widget.t.get('lateStatus'),
         Colors.orange,
       );
     }
@@ -602,7 +641,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               size: 20,
             ),
-            tooltip: 'Dodaj ponownie',
+            tooltip: widget.t.get('addAgainTooltip'),
             onPressed: () => _addAgain(entry.milliliters),
           ),
           IconButton(
@@ -611,7 +650,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               size: 20,
             ),
-            tooltip: 'Usuń',
+            tooltip: widget.t.get('deleteTooltip'),
             onPressed: () async {
               await _dbHelper.deleteWaterEntry(entry.id!);
               await _loadData();
