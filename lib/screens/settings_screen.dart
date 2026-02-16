@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/day_settings.dart';
+import '../widgets/glass_container.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Future<void> Function(String) onThemeChanged;
@@ -270,134 +271,203 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Opcje')),
-      body: ListView(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Wygląd',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: Icon(
-              widget.currentThemeMode == 'light'
-                  ? Icons.light_mode
-                  : widget.currentThemeMode == 'oled'
-                  ? Icons.brightness_1
-                  : Icons.dark_mode,
-            ),
-            title: const Text('Motyw'),
-            subtitle: Text(
-              widget.currentThemeMode == 'light'
-                  ? 'Jasny'
-                  : widget.currentThemeMode == 'oled'
-                  ? 'OLED Dark'
-                  : 'Ciemny',
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _showThemeDialog(),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Dzień',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.schedule),
-            title: const Text('Godziny dnia'),
-            subtitle: Text(
-              '${_settings!.dayStartHour.toString().padLeft(2, '0')}:${_settings!.dayStartMinute.toString().padLeft(2, '0')} - '
-              '${_settings!.dayEndHour.toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')}',
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _showDayTimeDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.restart_alt),
-            title: const Text('Reset licznika'),
-            subtitle: Text(
-              'Codziennie o ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} (3h po końcu dnia)',
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.flag),
-            title: const Text('Dzienny cel'),
-            subtitle: Text(_settings!.formatAmount(_settings!.dailyGoal)),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _showDailyGoalDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.straighten),
-            title: const Text('Jednostki'),
-            subtitle: Text(
-              _settings!.unit == 'ml' ? 'Mililitry (ml)' : 'Uncje (oz)',
-            ),
-            trailing: Switch(
-              value: _settings!.unit == 'oz',
-              onChanged: (value) async {
-                final updatedSettings = DaySettings(
-                  id: _settings!.id,
-                  dayStartHour: _settings!.dayStartHour,
-                  dayStartMinute: _settings!.dayStartMinute,
-                  dayEndHour: _settings!.dayEndHour,
-                  dayEndMinute: _settings!.dayEndMinute,
-                  dailyGoal: _settings!.dailyGoal,
-                  unit: value ? 'oz' : 'ml',
-                );
-                await _dbHelper.updateDaySettings(updatedSettings);
-                await _loadSettings();
-              },
-            ),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Informacje',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('O aplikacji'),
-            subtitle: const Text('Drink Water Tracker v1.0'),
-            onTap: () {
-              showAboutDialog(
-                context: context,
-                applicationName: 'Drink Water Tracker',
-                applicationVersion: '1.0.0',
-                applicationIcon: const Icon(
-                  Icons.water_drop,
-                  size: 48,
-                  color: Colors.blue,
+    return LiquidGlassBackground(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Opcje')),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 4, top: 16, bottom: 8),
+              child: Text(
+                'Wygląd',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
                 ),
+              ),
+            ),
+            GlassContainer(
+              borderRadius: 16,
+              blur: 12,
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                leading: Icon(
+                  widget.currentThemeMode == 'light'
+                      ? Icons.light_mode_rounded
+                      : widget.currentThemeMode == 'oled'
+                      ? Icons.brightness_1_rounded
+                      : Icons.dark_mode_rounded,
+                ),
+                title: const Text('Motyw'),
+                subtitle: Text(
+                  widget.currentThemeMode == 'light'
+                      ? 'Jasny'
+                      : widget.currentThemeMode == 'oled'
+                      ? 'OLED Dark'
+                      : 'Ciemny',
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _showThemeDialog(),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 4, top: 20, bottom: 8),
+              child: Text(
+                'Dzień',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            GlassContainer(
+              borderRadius: 16,
+              blur: 12,
+              padding: EdgeInsets.zero,
+              child: Column(
                 children: [
-                  const Text(
-                    'Prosta aplikacja do śledzenia ilości wypijanej wody.',
+                  ListTile(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
+                    leading: const Icon(Icons.schedule_rounded),
+                    title: const Text('Godziny dnia'),
+                    subtitle: Text(
+                      '${_settings!.dayStartHour.toString().padLeft(2, '0')}:${_settings!.dayStartMinute.toString().padLeft(2, '0')} - '
+                      '${_settings!.dayEndHour.toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')}',
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                    ),
+                    onTap: _showDayTimeDialog,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restart_alt_rounded),
+                    title: const Text('Reset licznika'),
+                    subtitle: Text(
+                      'Codziennie o ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} (3h po końcu dnia)',
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.flag_rounded),
+                    title: const Text('Dzienny cel'),
+                    subtitle: Text(
+                      _settings!.formatAmount(_settings!.dailyGoal),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                    ),
+                    onTap: _showDailyGoalDialog,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ),
+                  ListTile(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(16),
+                      ),
+                    ),
+                    leading: const Icon(Icons.straighten_rounded),
+                    title: const Text('Jednostki'),
+                    subtitle: Text(
+                      _settings!.unit == 'ml' ? 'Mililitry (ml)' : 'Uncje (oz)',
+                    ),
+                    trailing: Switch(
+                      value: _settings!.unit == 'oz',
+                      onChanged: (value) async {
+                        final updatedSettings = DaySettings(
+                          id: _settings!.id,
+                          dayStartHour: _settings!.dayStartHour,
+                          dayStartMinute: _settings!.dayStartMinute,
+                          dayEndHour: _settings!.dayEndHour,
+                          dayEndMinute: _settings!.dayEndMinute,
+                          dailyGoal: _settings!.dailyGoal,
+                          unit: value ? 'oz' : 'ml',
+                        );
+                        await _dbHelper.updateDaySettings(updatedSettings);
+                        await _loadSettings();
+                      },
+                    ),
                   ),
                 ],
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 4, top: 20, bottom: 8),
+              child: Text(
+                'Informacje',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            GlassContainer(
+              borderRadius: 16,
+              blur: 12,
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                leading: const Icon(Icons.info_outline_rounded),
+                title: const Text('O aplikacji'),
+                subtitle: const Text('Drink Water Tracker v1.0'),
+                onTap: () {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'Drink Water Tracker',
+                    applicationVersion: '1.0.0',
+                    applicationIcon: const Icon(
+                      Icons.water_drop_rounded,
+                      size: 48,
+                      color: Colors.blue,
+                    ),
+                    children: [
+                      const Text(
+                        'Prosta aplikacja do śledzenia ilości wypijanej wody.',
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }

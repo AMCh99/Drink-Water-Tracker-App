@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/water_button.dart';
 import '../models/water_entry.dart';
+import '../widgets/glass_container.dart';
 
 class AddWaterScreen extends StatefulWidget {
   const AddWaterScreen({super.key});
@@ -127,40 +128,60 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dodaj wodę')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.3,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: _waterButtons.length,
-                itemBuilder: (context, index) {
-                  final button = _waterButtons[index];
-                  return _buildWaterButton(button);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showCustomAmountDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('Dodaj własną ilość'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
+    return LiquidGlassBackground(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Dodaj wodę')),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: _waterButtons.length,
+                  itemBuilder: (context, index) {
+                    final button = _waterButtons[index];
+                    return _buildWaterButton(button);
+                  },
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              GlassContainer(
+                padding: EdgeInsets.zero,
+                borderRadius: 16,
+                blur: 10,
+                child: InkWell(
+                  onTap: _showCustomAmountDialog,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Dodaj własną ilość',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -171,14 +192,15 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
         button.assetPath ??
         WaterButton.getAssetForMilliliters(button.milliliters);
 
-    return Card(
-      elevation: button.isFavorite ? 4 : 1,
+    return GlassContainer(
+      borderRadius: 16,
+      blur: 12,
+      opacity: button.isFavorite ? 0.18 : 0.10,
       child: InkWell(
         onTap: () => _addWater(button.milliliters),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // Główna zawartość przycisku
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -189,7 +211,9 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                     Icon(
                       button.icon,
                       size: 48,
-                      color: button.isFavorite ? Colors.amber : null,
+                      color: button.isFavorite
+                          ? Colors.amber
+                          : Theme.of(context).colorScheme.primary,
                     ),
                   const SizedBox(height: 8),
                   Text(
@@ -198,21 +222,24 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                       fontSize: 18,
                       fontWeight: button.isFavorite
                           ? FontWeight.bold
-                          : FontWeight.normal,
+                          : FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            // Przycisk gwiazdki w rogu
             Positioned(
               top: 4,
               right: 4,
               child: IconButton(
                 icon: Icon(
-                  button.isFavorite ? Icons.star : Icons.star_border,
-                  color: button.isFavorite ? Colors.amber : Colors.grey,
-                  size: 28,
+                  button.isFavorite
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  color: button.isFavorite
+                      ? Colors.amber
+                      : Colors.grey.withOpacity(0.5),
+                  size: 24,
                 ),
                 onPressed: () => _toggleFavorite(button),
                 padding: EdgeInsets.zero,

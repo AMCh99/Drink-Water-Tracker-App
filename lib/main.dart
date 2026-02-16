@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'database/database_helper.dart';
@@ -8,6 +9,7 @@ import 'screens/settings_screen.dart';
 import 'screens/add_water_screen.dart';
 import 'screens/stats_screen.dart';
 import 'utils/widget_helper.dart';
+import 'widgets/glass_container.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +93,13 @@ class _MyAppState extends State<MyApp> {
           seedColor: Colors.blue,
           brightness: Brightness.light,
         ),
+        scaffoldBackgroundColor: Colors.transparent,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
         useMaterial3: true,
       ),
       darkTheme: _isOled
@@ -102,10 +111,15 @@ class _MyAppState extends State<MyApp> {
               ),
               scaffoldBackgroundColor: Colors.black,
               appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.black,
-                surfaceTintColor: Colors.black,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                systemOverlayStyle: SystemUiOverlayStyle.light,
               ),
-              cardTheme: const CardThemeData(color: Color(0xFF121212)),
+              cardTheme: CardThemeData(
+                color: Colors.white.withOpacity(0.06),
+                elevation: 0,
+              ),
               dialogTheme: const DialogThemeData(
                 backgroundColor: Color(0xFF121212),
               ),
@@ -118,6 +132,13 @@ class _MyAppState extends State<MyApp> {
               colorScheme: ColorScheme.fromSeed(
                 seedColor: Colors.blue,
                 brightness: Brightness.dark,
+              ),
+              scaffoldBackgroundColor: Colors.transparent,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                systemOverlayStyle: SystemUiOverlayStyle.light,
               ),
               useMaterial3: true,
             ),
@@ -269,264 +290,352 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
         ? (_totalWater / _daySettings!.dailyGoal).clamp(0.0, 1.0)
         : 0.0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Drink water'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            tooltip: 'Statystyki',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const StatsScreen()),
-              );
-            },
+    return LiquidGlassBackground(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Drink water',
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _openSettings,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Licznik wody - ładniejszy design
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors:
-                    Theme.of(context).scaffoldBackgroundColor == Colors.black
-                    ? [const Color(0xFF0D1B2A), const Color(0xFF1B2838)]
-                    : [Colors.blue.shade400, Colors.blue.shade600],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow:
-                  Theme.of(context).scaffoldBackgroundColor == Colors.black
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.bar_chart_rounded),
+              tooltip: 'Statystyki',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StatsScreen()),
+                );
+              },
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.water_drop,
-                      size: 40,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _daySettings?.formatAmount(_totalWater) ??
-                          '$_totalWater ml',
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+            IconButton(
+              icon: const Icon(Icons.settings_rounded),
+              onPressed: _openSettings,
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Główny licznik wody — Liquid Glass
+            GlassContainer(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
+              blur: 20,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.water_drop_rounded,
+                        size: 40,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (_daySettings != null) ...[
-                  Text(
-                    'z ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Pasek postępu
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 12,
-                      backgroundColor: Colors.white.withOpacity(0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        progress >= 1.0 ? Colors.green : Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}% celu',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                  // Przycisk "Dodaj ostatnią ilość"
-                  if (_lastEntry != null) ...[
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _addLastAmount,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(
-                        'Dodaj ponownie ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                      const SizedBox(width: 12),
+                      Text(
+                        _daySettings?.formatAmount(_totalWater) ??
+                            '$_totalWater ml',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_daySettings != null) ...[
+                    Text(
+                      'z ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    // Pasek postępu — glass style
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Stack(
+                        children: [
+                          Container(
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: progress,
+                            child: Container(
+                              height: 14,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: progress >= 1.0
+                                      ? [
+                                          Colors.green.shade400,
+                                          Colors.green.shade300,
+                                        ]
+                                      : [
+                                          Colors.blue.shade400,
+                                          Colors.cyan.shade300,
+                                        ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        (progress >= 1.0
+                                                ? Colors.green
+                                                : Colors.blue)
+                                            .withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(progress * 100).toStringAsFixed(0)}% celu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    // Przycisk "Dodaj ponownie" — glass style
+                    if (_lastEntry != null) ...[
+                      const SizedBox(height: 16),
+                      GlassContainer(
+                        padding: EdgeInsets.zero,
+                        borderRadius: 30,
+                        blur: 10,
+                        opacity: 0.08,
+                        child: InkWell(
+                          onTap: _addLastAmount,
+                          borderRadius: BorderRadius.circular(30),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.refresh_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Dodaj ponownie ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ],
+              ),
+            ),
+            // Lista wpisów
+            Expanded(
+              child: _entries.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Brak wpisów na dzisiaj.\nDodaj swoją pierwszą wodę!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _entries.length,
+                      itemBuilder: (context, index) {
+                        final entry = _entries[index];
+                        return _buildGlassEntryTile(entry);
+                      },
+                    ),
+            ),
+          ],
+        ),
+        floatingActionButton: GlassContainer(
+          padding: EdgeInsets.zero,
+          borderRadius: 28,
+          blur: 15,
+          opacity: 0.15,
+          child: InkWell(
+            onTap: _openAddWaterScreen,
+            borderRadius: BorderRadius.circular(28),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.add_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Dodaj wodę',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassEntryTile(WaterEntry entry) {
+    final timeFormat = DateFormat('HH:mm');
+    final status = _daySettings != null
+        ? _dbHelper.getEntryStatus(entry.timestamp, _daySettings!)
+        : 'normal';
+
+    Widget? statusWidget;
+    if (status == 'early') {
+      statusWidget = _buildStatusChip(
+        Icons.wb_sunny_rounded,
+        'Wcześnie! 👏',
+        Colors.green,
+      );
+    } else if (status == 'late') {
+      statusWidget = _buildStatusChip(
+        Icons.bedtime_rounded,
+        'Pora spać! 😴',
+        Colors.orange,
+      );
+    }
+
+    return GlassContainer(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: 16,
+      blur: 10,
+      opacity: 0.08,
+      child: Row(
+        children: [
+          // Ikona
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            ),
+            child: Icon(
+              Icons.water_drop_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Tekst
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      _daySettings?.formatAmount(entry.milliliters) ??
+                          '${entry.milliliters} ml',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (statusWidget != null) ...[
+                      const SizedBox(width: 8),
+                      statusWidget,
+                    ],
+                  ],
+                ),
+                Text(
+                  timeFormat.format(entry.timestamp),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
               ],
             ),
           ),
-          // Lista wpisów
-          Expanded(
-            child: _entries.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Brak wpisów na dzisiaj.\nDodaj swoją pierwszą wodę!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _entries.length,
-                    itemBuilder: (context, index) {
-                      final entry = _entries[index];
-                      final timeFormat = DateFormat('HH:mm');
-                      final status = _daySettings != null
-                          ? _dbHelper.getEntryStatus(
-                              entry.timestamp,
-                              _daySettings!,
-                            )
-                          : 'normal';
-
-                      Widget? statusWidget;
-                      if (status == 'early') {
-                        statusWidget = Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.wb_sunny,
-                                size: 16,
-                                color: Colors.green,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Wcześnie! 👏',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      } else if (status == 'late') {
-                        statusWidget = Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.bedtime,
-                                size: 16,
-                                color: Colors.orange,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Pora spać! 😴',
-                                style: TextStyle(
-                                  color: Colors.orange,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.water_drop),
-                        ),
-                        title: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                _daySettings?.formatAmount(entry.milliliters) ??
-                                    '${entry.milliliters} ml',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (statusWidget != null) ...[
-                              const SizedBox(width: 8),
-                              statusWidget,
-                            ],
-                          ],
-                        ),
-                        subtitle: Text(timeFormat.format(entry.timestamp)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.refresh),
-                              tooltip: 'Dodaj ponownie',
-                              onPressed: () => _addAgain(entry.milliliters),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              tooltip: 'Usuń',
-                              onPressed: () async {
-                                await _dbHelper.deleteWaterEntry(entry.id!);
-                                await _loadData();
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+          // Akcje
+          IconButton(
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              size: 20,
+            ),
+            tooltip: 'Dodaj ponownie',
+            onPressed: () => _addAgain(entry.milliliters),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              size: 20,
+            ),
+            tooltip: 'Usuń',
+            onPressed: () async {
+              await _dbHelper.deleteWaterEntry(entry.id!);
+              await _loadData();
+            },
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddWaterScreen,
-        icon: const Icon(Icons.add),
-        label: const Text('Dodaj wodę'),
+    );
+  }
+
+  Widget _buildStatusChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(color: color, fontSize: 11)),
+        ],
       ),
     );
   }
