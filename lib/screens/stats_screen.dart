@@ -263,7 +263,7 @@ class _StatsScreenState extends State<StatsScreen>
               getTitlesWidget: (value, meta) {
                 if (value == 0) return const SizedBox.shrink();
                 final label = _settings?.unit == 'oz'
-                    ? '${(value / 29.5735).toStringAsFixed(0)}'
+                    ? (value / 29.5735).toStringAsFixed(0)
                     : '${value.toInt()}';
                 return Text(
                   label,

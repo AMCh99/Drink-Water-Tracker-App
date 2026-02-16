@@ -167,6 +167,10 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
   }
 
   Widget _buildWaterButton(WaterButton button) {
+    final assetPath =
+        button.assetPath ??
+        WaterButton.getAssetForMilliliters(button.milliliters);
+
     return Card(
       elevation: button.isFavorite ? 4 : 1,
       child: InkWell(
@@ -179,11 +183,14 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    button.icon,
-                    size: 48,
-                    color: button.isFavorite ? Colors.amber : null,
-                  ),
+                  if (assetPath != null)
+                    Image.asset(assetPath, width: 52, height: 52)
+                  else
+                    Icon(
+                      button.icon,
+                      size: 48,
+                      color: button.isFavorite ? Colors.amber : null,
+                    ),
                   const SizedBox(height: 8),
                   Text(
                     '${button.milliliters} ml',

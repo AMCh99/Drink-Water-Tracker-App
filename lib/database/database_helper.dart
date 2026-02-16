@@ -392,6 +392,9 @@ class DatabaseHelper {
             ),
             order: map['order_index'] as int,
             isFavorite: (map['isFavorite'] as int?) == 1,
+            assetPath: WaterButton.getAssetForMilliliters(
+              map['milliliters'] as int,
+            ),
           ),
         )
         .toList();
