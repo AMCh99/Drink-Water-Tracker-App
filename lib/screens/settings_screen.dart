@@ -3,6 +3,7 @@ import '../database/database_helper.dart';
 import '../models/day_settings.dart';
 import '../utils/app_localizations.dart';
 import '../widgets/glass_container.dart';
+import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Future<void> Function(String) onThemeChanged;
@@ -125,9 +126,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       unit: _settings!.unit,
                       themeMode: _settings!.themeMode,
                       language: _settings!.language,
+                      notificationsEnabled: _settings!.notificationsEnabled,
+                      notificationIntervalMinutes:
+                          _settings!.notificationIntervalMinutes,
                     );
                     await _dbHelper.updateDaySettings(updatedSettings);
                     await _loadSettings();
+                    // Przelicz powiadomienia po zmianie godzin dnia
+                    await NotificationService.instance.scheduleReminders(
+                      updatedSettings,
+                    );
                     if (context.mounted) Navigator.pop(context);
                   },
                   child: Text(widget.t.get('save')),
@@ -201,6 +209,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     unit: _settings!.unit,
                     themeMode: _settings!.themeMode,
                     language: _settings!.language,
+                    notificationsEnabled: _settings!.notificationsEnabled,
+                    notificationIntervalMinutes:
+                        _settings!.notificationIntervalMinutes,
                   );
                   await _dbHelper.updateDaySettings(updatedSettings);
                   await _loadSettings();
@@ -303,6 +314,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showIntervalDialog() async {
+    if (_settings == null) return;
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(widget.t.get('chooseInterval')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: NotificationService.availableIntervals.map((minutes) {
+              return RadioListTile<int>(
+                title: Text(
+                  NotificationService.intervalLabel(
+                    minutes,
+                    _settings!.language,
+                  ),
+                ),
+                value: minutes,
+                groupValue: _settings!.notificationIntervalMinutes,
+                onChanged: (value) async {
+                  final updatedSettings = DaySettings(
+                    id: _settings!.id,
+                    dayStartHour: _settings!.dayStartHour,
+                    dayStartMinute: _settings!.dayStartMinute,
+                    dayEndHour: _settings!.dayEndHour,
+                    dayEndMinute: _settings!.dayEndMinute,
+                    dailyGoal: _settings!.dailyGoal,
+                    unit: _settings!.unit,
+                    themeMode: _settings!.themeMode,
+                    language: _settings!.language,
+                    notificationsEnabled: _settings!.notificationsEnabled,
+                    notificationIntervalMinutes: value!,
+                  );
+                  await _dbHelper.updateDaySettings(updatedSettings);
+                  await _loadSettings();
+                  await NotificationService.instance.scheduleReminders(
+                    updatedSettings,
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                },
+              );
+            }).toList(),
           ),
         );
       },
@@ -502,12 +562,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           unit: value ? 'oz' : 'ml',
                           themeMode: _settings!.themeMode,
                           language: _settings!.language,
+                          notificationsEnabled: _settings!.notificationsEnabled,
+                          notificationIntervalMinutes:
+                              _settings!.notificationIntervalMinutes,
                         );
                         await _dbHelper.updateDaySettings(updatedSettings);
                         await _loadSettings();
                       },
                     ),
                   ),
+                ],
+              ),
+            ),
+            // ==================== POWIADOMIENIA ====================
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
+              child: Text(
+                widget.t.get('notifications'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            GlassContainer(
+              borderRadius: 16,
+              blur: 12,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: const Radius.circular(16),
+                        bottom: Radius.circular(
+                          _settings!.notificationsEnabled ? 0 : 16,
+                        ),
+                      ),
+                    ),
+                    secondary: const Icon(Icons.notifications_rounded),
+                    title: Text(widget.t.get('notificationsEnabled')),
+                    subtitle: Text(
+                      widget.t.get('notificationsEnabledSubtitle'),
+                    ),
+                    value: _settings!.notificationsEnabled,
+                    onChanged: (value) async {
+                      final updatedSettings = DaySettings(
+                        id: _settings!.id,
+                        dayStartHour: _settings!.dayStartHour,
+                        dayStartMinute: _settings!.dayStartMinute,
+                        dayEndHour: _settings!.dayEndHour,
+                        dayEndMinute: _settings!.dayEndMinute,
+                        dailyGoal: _settings!.dailyGoal,
+                        unit: _settings!.unit,
+                        themeMode: _settings!.themeMode,
+                        language: _settings!.language,
+                        notificationsEnabled: value,
+                        notificationIntervalMinutes:
+                            _settings!.notificationIntervalMinutes,
+                      );
+                      await _dbHelper.updateDaySettings(updatedSettings);
+                      await _loadSettings();
+                      await NotificationService.instance.scheduleReminders(
+                        updatedSettings,
+                      );
+                    },
+                  ),
+                  if (_settings!.notificationsEnabled) ...[
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.08),
+                    ),
+                    ListTile(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(16),
+                        ),
+                      ),
+                      leading: const Icon(Icons.timer_rounded),
+                      title: Text(widget.t.get('notificationInterval')),
+                      subtitle: Text(
+                        NotificationService.intervalLabel(
+                          _settings!.notificationIntervalMinutes,
+                          _settings!.language,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                      ),
+                      onTap: _showIntervalDialog,
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -56,7 +56,9 @@ class DatabaseHelper {
         dailyGoal INTEGER NOT NULL DEFAULT 2000,
         unit TEXT NOT NULL DEFAULT 'ml',
         themeMode TEXT NOT NULL DEFAULT 'system',
-        language TEXT NOT NULL DEFAULT 'pl'
+        language TEXT NOT NULL DEFAULT 'pl',
+        notificationsEnabled INTEGER NOT NULL DEFAULT 1,
+        notificationIntervalMinutes INTEGER NOT NULL DEFAULT 60
       )
     ''');
 
@@ -140,6 +142,16 @@ class DatabaseHelper {
       // Dodaj kolumnę language do istniejącej tabeli day_settings
       await db.execute('''
         ALTER TABLE day_settings ADD COLUMN language TEXT NOT NULL DEFAULT 'pl'
+      ''');
+    }
+
+    if (oldVersion < 8) {
+      // Dodaj kolumny powiadomień do istniejącej tabeli day_settings
+      await db.execute('''
+        ALTER TABLE day_settings ADD COLUMN notificationsEnabled INTEGER NOT NULL DEFAULT 1
+      ''');
+      await db.execute('''
+        ALTER TABLE day_settings ADD COLUMN notificationIntervalMinutes INTEGER NOT NULL DEFAULT 60
       ''');
     }
   }
@@ -253,50 +265,56 @@ class DatabaseHelper {
   }
 
   // Sprawdza status wpisu względem dnia użytkownika
+  // 'normal' — w godzinach dnia (dayStart–dayEnd)
+  // 'late' — po końcu dnia, przed resetem (dayEnd–reset) — "Pora spać!"
+  // 'early' — po resecie, przed początkiem dnia (reset–dayStart) — "Wcześnie!"
   String getEntryStatus(DateTime entryTime, DaySettings settings) {
-    final now = DateTime.now();
     final resetTime = _calculateResetTime(settings);
 
-    // Określamy początek i koniec aktywnego dnia
-    DateTime dayStart = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      settings.dayStartHour,
-      settings.dayStartMinute,
-    );
+    // Konwertujemy wszystko na minuty od północy do łatwego porównania
+    final entryMinutes = entryTime.hour * 60 + entryTime.minute;
+    final startMinutes = settings.dayStartHour * 60 + settings.dayStartMinute;
+    final endMinutes = settings.dayEndHour * 60 + settings.dayEndMinute;
+    final resetMinutes = resetTime.hour * 60 + resetTime.minute;
 
-    DateTime dayEnd = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      settings.dayEndHour,
-      settings.dayEndMinute,
-    );
-
-    // Jeśli kończy się wcześniej niż zaczyna, to koniec jest w tym samym dniu
-    if (settings.dayEndHour > settings.dayStartHour) {
-      // Normalny dzień w ciągu jednej doby
-      if (entryTime.isBefore(dayStart)) {
-        return 'early'; // Przed początkiem dnia
-      } else if (entryTime.isAfter(dayEnd)) {
-        return 'late'; // Po końcu dnia
-      } else {
-        return 'normal'; // W normalnych godzinach
+    // Normalny dzień (start < end, np. 6:00–22:00)
+    if (startMinutes < endMinutes) {
+      if (entryMinutes >= startMinutes && entryMinutes <= endMinutes) {
+        return 'normal';
       }
-    } else {
-      // Dzień przechodzi przez północ
-      if (entryTime.isAfter(dayEnd) && entryTime.isBefore(dayStart)) {
-        // Jest między końcem a początkiem (w nocy)
-        if (entryTime.hour < resetTime.hour ||
-            (entryTime.hour == resetTime.hour &&
-                entryTime.minute < resetTime.minute)) {
-          return 'late'; // Po końcu poprzedniego dnia
+
+      // Poza godzinami dnia — rozróżniamy late vs early
+      // Reset jest po północy (np. 01:00) gdy dayEnd + 3h > 24
+      if (resetMinutes < startMinutes) {
+        // Reset jest po północy (np. koniec 22:00, reset 01:00, start 06:00)
+        // late: od dayEnd do północy ORAZ od północy do reset
+        // early: od reset do dayStart
+        if (entryMinutes > endMinutes || entryMinutes < resetMinutes) {
+          return 'late';
         } else {
-          return 'early'; // Przed początkiem nowego dnia
+          return 'early';
         }
       } else {
-        return 'normal'; // W normalnych godzinach
+        // Reset jest przed północą (np. koniec 18:00, reset 21:00, start 06:00)
+        // late: od dayEnd do reset
+        // early: od reset do dayStart (+ po północy do dayStart)
+        if (entryMinutes > endMinutes && entryMinutes < resetMinutes) {
+          return 'late';
+        } else {
+          return 'early';
+        }
+      }
+    } else {
+      // Dzień przechodzi przez północ (start > end, np. 22:00–06:00)
+      // normal: od start do północy ORAZ od północy do end
+      if (entryMinutes >= startMinutes || entryMinutes <= endMinutes) {
+        return 'normal';
+      }
+      // Poza normalnymi godzinami: od end do start
+      if (entryMinutes > endMinutes && entryMinutes < resetMinutes) {
+        return 'late';
+      } else {
+        return 'early';
       }
     }
   }

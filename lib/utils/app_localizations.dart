@@ -20,7 +20,7 @@ class AppLocalizations {
     'addWater': {'pl': 'Dodaj wodę', 'en': 'Add water'},
     'added': {'pl': 'Dodano', 'en': 'Added'},
     'earlyStatus': {'pl': 'Wcześnie! 👏', 'en': 'Early! 👏'},
-    'lateStatus': {'pl': 'Pora spać! 😴', 'en': 'Time to sleep! 😴'},
+    'lateStatus': {'pl': 'Pora spać! 😴', 'en': 'It\'s late! 😴'},
     'addAgainTooltip': {'pl': 'Dodaj ponownie', 'en': 'Add again'},
     'deleteTooltip': {'pl': 'Usuń', 'en': 'Delete'},
 
@@ -106,6 +106,23 @@ class AppLocalizations {
     'weekdayFri': {'pl': 'Pt', 'en': 'Fr'},
     'weekdaySat': {'pl': 'Sb', 'en': 'Sa'},
     'weekdaySun': {'pl': 'Nd', 'en': 'Su'},
+
+    // ==================== POWIADOMIENIA ====================
+    'notifications': {'pl': 'Powiadomienia', 'en': 'Notifications'},
+    'notificationsEnabled': {
+      'pl': 'Przypomnienia o piciu',
+      'en': 'Drinking reminders',
+    },
+    'notificationsEnabledSubtitle': {
+      'pl': 'Regularne przypomnienia o piciu wody',
+      'en': 'Regular reminders to drink water',
+    },
+    'notificationInterval': {'pl': 'Częstotliwość', 'en': 'Frequency'},
+    'chooseInterval': {'pl': 'Wybierz częstotliwość', 'en': 'Choose frequency'},
+    'notificationWindow': {
+      'pl': 'Okno powiadomień',
+      'en': 'Notification window',
+    },
   };
 
   String get(String key) {

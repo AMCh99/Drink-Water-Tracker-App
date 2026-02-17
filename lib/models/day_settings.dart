@@ -8,6 +8,9 @@ class DaySettings {
   final String unit; // jednostka: 'ml' lub 'oz'
   final String themeMode; // 'system', 'light', 'dark'
   final String language; // 'pl', 'en'
+  final bool notificationsEnabled; // czy powiadomienia włączone
+  final int
+  notificationIntervalMinutes; // interwał w minutach: 15, 30, 60, 90, 120
 
   DaySettings({
     this.id,
@@ -19,6 +22,8 @@ class DaySettings {
     this.unit = 'ml',
     this.themeMode = 'system',
     this.language = 'pl',
+    this.notificationsEnabled = true,
+    this.notificationIntervalMinutes = 60,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +37,8 @@ class DaySettings {
       'unit': unit,
       'themeMode': themeMode,
       'language': language,
+      'notificationsEnabled': notificationsEnabled ? 1 : 0,
+      'notificationIntervalMinutes': notificationIntervalMinutes,
     };
   }
 
@@ -46,6 +53,9 @@ class DaySettings {
       unit: map['unit'] as String? ?? 'ml',
       themeMode: map['themeMode'] as String? ?? 'system',
       language: map['language'] as String? ?? 'pl',
+      notificationsEnabled: (map['notificationsEnabled'] as int? ?? 1) == 1,
+      notificationIntervalMinutes:
+          map['notificationIntervalMinutes'] as int? ?? 60,
     );
   }
 
@@ -77,6 +87,8 @@ class DaySettings {
       unit: 'ml',
       themeMode: 'system',
       language: 'pl',
+      notificationsEnabled: true,
+      notificationIntervalMinutes: 60,
     );
   }
 }

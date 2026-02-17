@@ -11,11 +11,19 @@ import 'screens/stats_screen.dart';
 import 'utils/widget_helper.dart';
 import 'utils/app_localizations.dart';
 import 'widgets/glass_container.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pl');
   await initializeDateFormatting('en_US');
+
+  // Inicjalizacja powiadomień
+  await NotificationService.instance.init();
+  // Zaplanuj przypomnienia na podstawie zapisanych ustawień
+  final settings = await DatabaseHelper.instance.getDaySettings();
+  await NotificationService.instance.scheduleReminders(settings);
+
   runApp(const MyApp());
 }
 
@@ -81,6 +89,8 @@ class _MyAppState extends State<MyApp> {
       unit: settings.unit,
       themeMode: mode,
       language: settings.language,
+      notificationsEnabled: settings.notificationsEnabled,
+      notificationIntervalMinutes: settings.notificationIntervalMinutes,
     );
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
@@ -102,6 +112,8 @@ class _MyAppState extends State<MyApp> {
       unit: settings.unit,
       themeMode: settings.themeMode,
       language: lang,
+      notificationsEnabled: settings.notificationsEnabled,
+      notificationIntervalMinutes: settings.notificationIntervalMinutes,
     );
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
@@ -251,6 +263,9 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
 
     // Zaktualizuj widget
     await WidgetHelper.updateWidget();
+
+    // Przelicz powiadomienia (po dodaniu/usunięciu wody)
+    await NotificationService.instance.scheduleReminders(settings);
   }
 
   Future<void> _addLastAmount() async {
@@ -606,30 +621,30 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  _daySettings?.formatAmount(entry.milliliters) ??
+                      '${entry.milliliters} ml',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 Row(
                   children: [
                     Text(
-                      _daySettings?.formatAmount(entry.milliliters) ??
-                          '${entry.milliliters} ml',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      timeFormat.format(entry.timestamp),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
                       ),
                     ),
                     if (statusWidget != null) ...[
                       const SizedBox(width: 8),
-                      statusWidget,
+                      Flexible(child: statusWidget),
                     ],
                   ],
-                ),
-                Text(
-                  timeFormat.format(entry.timestamp),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
-                  ),
                 ),
               ],
             ),
