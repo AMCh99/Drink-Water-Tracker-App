@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:confetti/confetti.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'database/database_helper.dart';
 import 'models/water_entry.dart';
 import 'models/day_settings.dart';
@@ -215,23 +217,51 @@ class WaterTrackerHome extends StatefulWidget {
 }
 
 class _WaterTrackerHomeState extends State<WaterTrackerHome>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   int _totalWater = 0;
   List<WaterEntry> _entries = [];
   DaySettings? _daySettings;
   WaterEntry? _lastEntry;
 
+  // Animacja postępu
+  late AnimationController _progressController;
+  late Animation<double> _progressAnimation;
+  double _previousProgress = 0.0;
+
+  // Confetti
+  late ConfettiController _confettiController;
+  bool _goalCelebratedToday = false;
+
+  // Audio
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _progressController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _progressAnimation = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _progressController, curve: Curves.easeOutCubic),
+    );
+
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
+
     _loadData();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _progressController.dispose();
+    _confettiController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -243,7 +273,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     }
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool playEffects = false}) async {
     print('DEBUG: Ładuję dane...');
     final total = await _dbHelper.getTotalWaterForDay(DateTime.now());
     final entries = await _dbHelper.getWaterEntriesForDay(DateTime.now());
@@ -253,6 +283,40 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     print(
       'DEBUG: Total: $total, Entries: ${entries.length}, Settings: ${settings.dayStartHour}:${settings.dayStartMinute} - ${settings.dayEndHour}:${settings.dayEndMinute}',
     );
+
+    final newProgress = settings.dailyGoal > 0
+        ? (total / settings.dailyGoal).clamp(0.0, 1.0)
+        : 0.0;
+
+    // Animuj pasek postępu
+    _progressAnimation =
+        Tween<double>(begin: _previousProgress, end: newProgress).animate(
+          CurvedAnimation(
+            parent: _progressController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _progressController.forward(from: 0);
+
+    // Confetti przy osiągnięciu 100%
+    if (newProgress >= 1.0 &&
+        _previousProgress < 1.0 &&
+        !_goalCelebratedToday) {
+      _goalCelebratedToday = true;
+      _confettiController.play();
+    }
+
+    // Efekty dźwiękowe i haptyczne przy dodawaniu wody
+    if (playEffects) {
+      HapticFeedback.mediumImpact();
+      try {
+        await _audioPlayer.play(AssetSource('sounds/water_drop.wav'));
+      } catch (_) {
+        // Ignoruj błędy audio
+      }
+    }
+
+    _previousProgress = newProgress;
 
     setState(() {
       _totalWater = total;
@@ -276,7 +340,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       milliliters: _lastEntry!.milliliters,
     );
     await _dbHelper.insertWaterEntry(entry);
-    await _loadData();
+    await _loadData(playEffects: true);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -296,7 +360,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       milliliters: milliliters,
     );
     await _dbHelper.insertWaterEntry(entry);
-    await _loadData();
+    await _loadData(playEffects: true);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -318,7 +382,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
 
     // Jeśli result == true, oznacza że woda została dodana
     if (result == true) {
-      await _loadData();
+      await _loadData(playEffects: true);
     }
   }
 
@@ -338,236 +402,276 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
 
   @override
   Widget build(BuildContext context) {
-    final progress = _daySettings != null && _daySettings!.dailyGoal > 0
-        ? (_totalWater / _daySettings!.dailyGoal).clamp(0.0, 1.0)
-        : 0.0;
-
     return LiquidGlassBackground(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            widget.t.get('appTitle'),
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.bar_chart_rounded),
-              tooltip: widget.t.get('statistics'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StatsScreen(t: widget.t),
-                  ),
-                );
-              },
+      child: Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              title: Text(
+                widget.t.get('appTitle'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.bar_chart_rounded),
+                  tooltip: widget.t.get('statistics'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StatsScreen(t: widget.t),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings_rounded),
+                  onPressed: _openSettings,
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.settings_rounded),
-              onPressed: _openSettings,
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            // Główny licznik wody — Liquid Glass
-            GlassContainer(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(24),
-              blur: 20,
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            body: Column(
+              children: [
+                // Główny licznik wody — Liquid Glass
+                GlassContainer(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  blur: 20,
+                  child: Column(
                     children: [
-                      Icon(
-                        Icons.water_drop_rounded,
-                        size: 40,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _daySettings?.formatAmount(_totalWater) ??
-                            '$_totalWater ml',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_daySettings != null) ...[
-                    Text(
-                      '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Pasek postępu — glass style
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Stack(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                          Icon(
+                            Icons.water_drop_rounded,
+                            size: 40,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          FractionallySizedBox(
-                            widthFactor: progress,
-                            child: Container(
-                              height: 14,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: progress >= 1.0
-                                      ? [
-                                          Colors.green.shade400,
-                                          Colors.green.shade300,
-                                        ]
-                                      : [
-                                          Colors.blue.shade400,
-                                          Colors.cyan.shade300,
-                                        ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        (progress >= 1.0
-                                                ? Colors.green
-                                                : Colors.blue)
-                                            .withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _daySettings?.formatAmount(_totalWater) ??
+                                '$_totalWater ml',
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    // Przycisk "Dodaj ponownie" — glass style
-                    if (_lastEntry != null) ...[
-                      const SizedBox(height: 16),
-                      GlassContainer(
-                        padding: EdgeInsets.zero,
-                        borderRadius: 30,
-                        blur: 10,
-                        opacity: 0.08,
-                        child: InkWell(
-                          onTap: _addLastAmount,
-                          borderRadius: BorderRadius.circular(30),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 8),
+                      if (_daySettings != null) ...[
+                        Text(
+                          '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Pasek postępu — animowany glass style
+                        AnimatedBuilder(
+                          animation: _progressController,
+                          builder: (context, child) {
+                            final progress = _progressAnimation.value;
+                            return Column(
                               children: [
-                                Icon(
-                                  Icons.refresh_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  size: 20,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      FractionallySizedBox(
+                                        widthFactor: progress,
+                                        child: Container(
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: progress >= 1.0
+                                                  ? [
+                                                      Colors.green.shade400,
+                                                      Colors.green.shade300,
+                                                    ]
+                                                  : [
+                                                      Colors.blue.shade400,
+                                                      Colors.cyan.shade300,
+                                                    ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color:
+                                                    (progress >= 1.0
+                                                            ? Colors.green
+                                                            : Colors.blue)
+                                                        .withOpacity(0.4),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(height: 8),
                                 Text(
-                                  '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                                  '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
                                   style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
+                                    ).colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                 ),
                               ],
+                            );
+                          },
+                        ),
+                        // Przycisk "Dodaj ponownie" — glass style
+                        if (_lastEntry != null) ...[
+                          const SizedBox(height: 16),
+                          GlassContainer(
+                            padding: EdgeInsets.zero,
+                            borderRadius: 30,
+                            blur: 10,
+                            opacity: 0.08,
+                            child: InkWell(
+                              onTap: _addLastAmount,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.refresh_rounded,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+                // Lista wpisów
+                Expanded(
+                  child: _entries.isEmpty
+                      ? Center(
+                          child: Text(
+                            widget.t.get('noEntriesToday'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _entries.length,
+                          itemBuilder: (context, index) {
+                            final entry = _entries[index];
+                            return _buildGlassEntryTile(entry);
+                          },
+                        ),
+                ),
+              ],
+            ),
+            floatingActionButton: GlassContainer(
+              padding: EdgeInsets.zero,
+              borderRadius: 28,
+              blur: 15,
+              opacity: 0.15,
+              child: InkWell(
+                onTap: _openAddWaterScreen,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.t.get('addWater'),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
                       ),
                     ],
-                  ],
-                ],
-              ),
-            ),
-            // Lista wpisów
-            Expanded(
-              child: _entries.isEmpty
-                  ? Center(
-                      child: Text(
-                        widget.t.get('noEntriesToday'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _entries.length,
-                      itemBuilder: (context, index) {
-                        final entry = _entries[index];
-                        return _buildGlassEntryTile(entry);
-                      },
-                    ),
-            ),
-          ],
-        ),
-        floatingActionButton: GlassContainer(
-          padding: EdgeInsets.zero,
-          borderRadius: 28,
-          blur: 15,
-          opacity: 0.15,
-          child: InkWell(
-            onTap: _openAddWaterScreen,
-            borderRadius: BorderRadius.circular(28),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.add_rounded,
-                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.t.get('addWater'),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          // Confetti overlay 🎉
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: const [
+                Colors.blue,
+                Colors.cyan,
+                Colors.lightBlue,
+                Colors.green,
+                Colors.teal,
+                Colors.white,
+              ],
+              numberOfParticles: 30,
+              gravity: 0.2,
+              emissionFrequency: 0.05,
+            ),
+          ),
+        ],
       ),
     );
   }
