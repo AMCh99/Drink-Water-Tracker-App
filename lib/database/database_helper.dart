@@ -475,6 +475,172 @@ class DatabaseHelper {
     );
   }
 
+  // Seria dni (streak) — ile kolejnych dni cel został osiągnięty
+  Future<int> getCurrentStreak() async {
+    final settings = await getDaySettings();
+    final now = DateTime.now();
+    int streak = 0;
+
+    // Sprawdzamy wstecz od wczoraj (dzisiaj się jeszcze liczy jako "w trakcie")
+    // Ale jeśli dzisiaj cel jest osiągnięty, zaczynamy od dzisiaj
+    for (int i = 0; i <= 365; i++) {
+      final day = DateTime(now.year, now.month, now.day - i, 12, 0);
+      final total = await getTotalWaterForDay(day);
+
+      if (total >= settings.dailyGoal) {
+        streak++;
+      } else {
+        // Dzisiaj jeszcze może być w trakcie, nie przerywaj
+        if (i == 0) continue;
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  // Statystyki roczne — dla widoku jak GitHub contributions
+  Future<List<DailyStats>> getYearlyStats(int year) async {
+    final settings = await getDaySettings();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final List<DailyStats> stats = [];
+
+    // Pobierz wszystkie dane z bazy za dany rok jednorazowo (optymalizacja)
+    final db = await database;
+    final startOfYear = DateTime(year, 1, 1);
+    final endOfYear = DateTime(year + 1, 1, 1);
+
+    final results = await db.query(
+      'water_entries',
+      where: 'timestamp >= ? AND timestamp < ?',
+      whereArgs: [startOfYear.toIso8601String(), endOfYear.toIso8601String()],
+    );
+
+    // Grupuj wpisy wg dnia
+    final Map<String, int> dailyTotals = {};
+    for (final row in results) {
+      final timestamp = DateTime.parse(row['timestamp'] as String);
+      final dayKey =
+          '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
+      dailyTotals[dayKey] =
+          (dailyTotals[dayKey] ?? 0) + (row['milliliters'] as int);
+    }
+
+    // Buduj listę statystyk dla każdego dnia w roku
+    final daysInYear = DateTime(
+      year + 1,
+      1,
+      1,
+    ).difference(DateTime(year, 1, 1)).inDays;
+    for (int d = 0; d < daysInYear; d++) {
+      final date = DateTime(year, 1, 1 + d);
+      if (date.isAfter(today)) {
+        stats.add(
+          DailyStats(date: date, totalMl: -1, goalMl: settings.dailyGoal),
+        );
+        continue;
+      }
+      final dayKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final total = dailyTotals[dayKey] ?? 0;
+      stats.add(
+        DailyStats(date: date, totalMl: total, goalMl: settings.dailyGoal),
+      );
+    }
+
+    return stats;
+  }
+
+  // Pobierz wszystkie wpisy do eksportu
+  Future<List<Map<String, dynamic>>> getAllEntriesForExport() async {
+    final db = await database;
+    return await db.query('water_entries', orderBy: 'timestamp ASC');
+  }
+
+  // Średnia tygodniowa — ostatnie N tygodni
+  Future<List<Map<String, dynamic>>> getWeeklyAverages({int weeks = 8}) async {
+    final settings = await getDaySettings();
+    final now = DateTime.now();
+    final List<Map<String, dynamic>> averages = [];
+
+    for (int w = weeks - 1; w >= 0; w--) {
+      final weekEnd = DateTime(now.year, now.month, now.day - (w * 7));
+      final weekStart = DateTime(weekEnd.year, weekEnd.month, weekEnd.day - 6);
+
+      int totalMl = 0;
+      int daysWithData = 0;
+      int daysGoalReached = 0;
+
+      for (int d = 0; d < 7; d++) {
+        final day = DateTime(
+          weekStart.year,
+          weekStart.month,
+          weekStart.day + d,
+          12,
+          0,
+        );
+        // Nie licz przyszłych dni
+        if (day.isAfter(now)) break;
+        final dayTotal = await getTotalWaterForDay(day);
+        totalMl += dayTotal;
+        if (dayTotal > 0) daysWithData++;
+        if (dayTotal >= settings.dailyGoal) daysGoalReached++;
+      }
+
+      averages.add({
+        'weekStart': weekStart,
+        'weekEnd': weekEnd,
+        'totalMl': totalMl,
+        'avgMl': daysWithData > 0 ? (totalMl / daysWithData).round() : 0,
+        'daysWithData': daysWithData,
+        'daysGoalReached': daysGoalReached,
+      });
+    }
+
+    return averages;
+  }
+
+  // Średnia miesięczna — ostatnie N miesięcy
+  Future<List<Map<String, dynamic>>> getMonthlyAverages({
+    int months = 6,
+  }) async {
+    final settings = await getDaySettings();
+    final now = DateTime.now();
+    final List<Map<String, dynamic>> averages = [];
+
+    for (int m = months - 1; m >= 0; m--) {
+      final monthDate = DateTime(now.year, now.month - m, 1);
+      final year = monthDate.year;
+      final month = monthDate.month;
+      final daysInMonth = DateTime(year, month + 1, 0).day;
+      final today = DateTime(now.year, now.month, now.day);
+
+      int totalMl = 0;
+      int daysWithData = 0;
+      int daysGoalReached = 0;
+
+      for (int d = 1; d <= daysInMonth; d++) {
+        final day = DateTime(year, month, d, 12, 0);
+        if (day.isAfter(today)) break;
+        final dayTotal = await getTotalWaterForDay(day);
+        totalMl += dayTotal;
+        if (dayTotal > 0) daysWithData++;
+        if (dayTotal >= settings.dailyGoal) daysGoalReached++;
+      }
+
+      averages.add({
+        'month': monthDate,
+        'totalMl': totalMl,
+        'avgMl': daysWithData > 0 ? (totalMl / daysWithData).round() : 0,
+        'daysWithData': daysWithData,
+        'daysGoalReached': daysGoalReached,
+      });
+    }
+
+    return averages;
+  }
+
   Future close() async {
     final db = await database;
     db.close();

@@ -107,6 +107,59 @@ class AppLocalizations {
     'weekdaySat': {'pl': 'Sb', 'en': 'Sa'},
     'weekdaySun': {'pl': 'Nd', 'en': 'Su'},
 
+    // ==================== SERIA (STREAK) ====================
+    'streak': {'pl': 'Seria', 'en': 'Streak'},
+    'streakDays': {'pl': 'dni z rzędu!', 'en': 'days in a row!'},
+    'streakDay': {'pl': 'dzień z rzędu!', 'en': 'day in a row!'},
+    'streakRegular': {'pl': 'Pijesz regularnie', 'en': 'Drinking regularly'},
+    'noStreak': {'pl': 'Zacznij swoją serię!', 'en': 'Start your streak!'},
+    'bestStreak': {'pl': 'Najlepsza seria', 'en': 'Best streak'},
+
+    // ==================== ROCZNE STATYSTYKI ====================
+    'year': {'pl': 'Rok', 'en': 'Year'},
+    'yearlyOverview': {'pl': 'Przegląd roczny', 'en': 'Yearly overview'},
+    'less': {'pl': 'Mniej', 'en': 'Less'},
+    'more': {'pl': 'Więcej', 'en': 'More'},
+    'totalDaysTracked': {'pl': 'Dni z danymi', 'en': 'Days tracked'},
+    'totalGoalDays': {'pl': 'Dni z celem', 'en': 'Goal days'},
+    'yearlyAvg': {'pl': 'Średnia roczna', 'en': 'Yearly average'},
+
+    // ==================== EKSPORT ====================
+    'export': {'pl': 'Eksport', 'en': 'Export'},
+    'exportData': {'pl': 'Eksportuj dane', 'en': 'Export data'},
+    'exportCSV': {'pl': 'Eksport CSV', 'en': 'Export CSV'},
+    'exportPDF': {'pl': 'Eksport PDF', 'en': 'Export PDF'},
+    'exportCSVDesc': {
+      'pl': 'Eksportuj historię picia do pliku CSV',
+      'en': 'Export drinking history to CSV file',
+    },
+    'exportPDFDesc': {
+      'pl': 'Eksportuj raport ze statystykami jako PDF',
+      'en': 'Export statistics report as PDF',
+    },
+    'exportSuccess': {
+      'pl': 'Dane wyeksportowane pomyślnie!',
+      'en': 'Data exported successfully!',
+    },
+    'exportError': {'pl': 'Błąd eksportu', 'en': 'Export error'},
+    'noDataToExport': {
+      'pl': 'Brak danych do eksportu',
+      'en': 'No data to export',
+    },
+    'date': {'pl': 'Data', 'en': 'Date'},
+    'time': {'pl': 'Czas', 'en': 'Time'},
+    'amount': {'pl': 'Ilość (ml)', 'en': 'Amount (ml)'},
+
+    // ==================== TRENDY ====================
+    'trends': {'pl': 'Trendy', 'en': 'Trends'},
+    'weeklyAvgTrend': {'pl': 'Średnia tygodniowa', 'en': 'Weekly average'},
+    'monthlyAvgTrend': {'pl': 'Średnia miesięczna', 'en': 'Monthly average'},
+    'last8Weeks': {'pl': 'Ostatnie 8 tygodni', 'en': 'Last 8 weeks'},
+    'last6Months': {'pl': 'Ostatnie 6 miesięcy', 'en': 'Last 6 months'},
+    'avgPerDay': {'pl': 'Śr. dziennie', 'en': 'Avg per day'},
+    'goalDays': {'pl': 'Dni z celem', 'en': 'Goal days'},
+    'weekShort': {'pl': 'Tydz', 'en': 'Wk'},
+
     // ==================== POWIADOMIENIA ====================
     'notifications': {'pl': 'Powiadomienia', 'en': 'Notifications'},
     'notificationsEnabled': {
