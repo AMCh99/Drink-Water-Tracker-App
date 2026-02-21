@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../database/database_helper.dart';
 import '../models/water_button.dart';
 import '../models/water_entry.dart';
@@ -193,7 +194,7 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
   Widget _buildWaterButton(WaterButton button) {
     final assetPath =
         button.assetPath ??
-        WaterButton.getAssetForMilliliters(button.milliliters);
+        WaterButton.getClosestAsset(button.milliliters);
 
     return GlassContainer(
       borderRadius: 16,
@@ -208,7 +209,19 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (assetPath != null)
+                  if (assetPath != null && assetPath.endsWith('.svg'))
+                    SvgPicture.asset(
+                      assetPath,
+                      width: 52,
+                      height: 52,
+                      colorFilter: ColorFilter.mode(
+                        button.isFavorite
+                            ? Colors.amber
+                            : Theme.of(context).colorScheme.primary,
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  else if (assetPath != null)
                     Image.asset(assetPath, width: 52, height: 52)
                   else
                     Icon(

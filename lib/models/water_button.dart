@@ -6,7 +6,7 @@ class WaterButton {
   final IconData icon;
   final int order; // kolejność wyświetlania
   final bool isFavorite; // czy ulubiony
-  final String? assetPath; // opcjonalna ścieżka do własnej ikony PNG
+  final String? assetPath; // opcjonalna ścieżka do ikony SVG
 
   WaterButton({
     this.id,
@@ -55,10 +55,40 @@ class WaterButton {
     );
   }
 
-  /// Mapowanie ml → asset PNG (jeśli istnieje)
+  /// Mapowanie ml → asset SVG ikony
   static String? getAssetForMilliliters(int ml) {
-    const assetMap = {300: 'assets/icon/300ml.png'};
+    const assetMap = {
+      100: 'assets/icons/100ml.svg',
+      150: 'assets/icons/150ml.svg',
+      250: 'assets/icons/250ml.svg',
+      300: 'assets/icons/300ml.svg',
+      330: 'assets/icons/330ml.svg',
+      500: 'assets/icons/500ml.svg',
+      650: 'assets/icons/650ml.svg',
+      750: 'assets/icons/750ml.svg',
+      1000: 'assets/icons/1000ml.svg',
+      1500: 'assets/icons/1500ml.svg',
+    };
     return assetMap[ml];
+  }
+
+  /// Dla niestandardowych ilości — znajdź najbliższy SVG
+  static String? getClosestAsset(int ml) {
+    final exact = getAssetForMilliliters(ml);
+    if (exact != null) return exact;
+
+    // Znajdź najbliższą ikonę
+    const sizes = [100, 150, 250, 300, 330, 500, 650, 750, 1000, 1500];
+    int closest = sizes.first;
+    int minDiff = (ml - closest).abs();
+    for (final s in sizes) {
+      final diff = (ml - s).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = s;
+      }
+    }
+    return getAssetForMilliliters(closest);
   }
 
   // Sugerowane ikony na podstawie pojemności
@@ -76,25 +106,17 @@ class WaterButton {
     }
   }
 
-  // Domyślne przyciski
+  // Domyślne przyciski — 10 rozmiarów z ikonami SVG
   static List<WaterButton> defaultButtons() {
+    const sizes = [100, 150, 250, 300, 330, 500, 650, 750, 1000, 1500];
     return [
-      WaterButton(milliliters: 250, icon: getIconForMilliliters(250), order: 1),
-      WaterButton(
-        milliliters: 300,
-        icon: getIconForMilliliters(300),
-        order: 2,
-        assetPath: getAssetForMilliliters(300),
-      ),
-      WaterButton(milliliters: 400, icon: getIconForMilliliters(400), order: 3),
-      WaterButton(milliliters: 500, icon: getIconForMilliliters(500), order: 4),
-      WaterButton(milliliters: 650, icon: getIconForMilliliters(650), order: 5),
-      WaterButton(milliliters: 750, icon: getIconForMilliliters(750), order: 6),
-      WaterButton(
-        milliliters: 1000,
-        icon: getIconForMilliliters(1000),
-        order: 7,
-      ),
+      for (int i = 0; i < sizes.length; i++)
+        WaterButton(
+          milliliters: sizes[i],
+          icon: getIconForMilliliters(sizes[i]),
+          order: i + 1,
+          assetPath: getAssetForMilliliters(sizes[i]),
+        ),
     ];
   }
 }

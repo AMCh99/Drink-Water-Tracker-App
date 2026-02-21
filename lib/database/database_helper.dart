@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -153,6 +153,50 @@ class DatabaseHelper {
       await db.execute('''
         ALTER TABLE day_settings ADD COLUMN notificationIntervalMinutes INTEGER NOT NULL DEFAULT 60
       ''');
+    }
+
+    if (oldVersion < 9) {
+      // Dodaj nowe rozmiary przycisków (100, 150, 330, 1500)
+      // Najpierw sprawdź jakie rozmiary już istnieją
+      final existing = await db.query('water_buttons');
+      final existingSizes = existing
+          .map((e) => e['milliliters'] as int)
+          .toSet();
+
+      // Pobierz najwyższy order_index
+      int maxOrder = 0;
+      for (final row in existing) {
+        final order = row['order_index'] as int;
+        if (order > maxOrder) maxOrder = order;
+      }
+
+      final newSizes = [100, 150, 330, 1500];
+      for (final ml in newSizes) {
+        if (!existingSizes.contains(ml)) {
+          maxOrder++;
+          final icon = WaterButton.getIconForMilliliters(ml);
+          await db.insert('water_buttons', {
+            'milliliters': ml,
+            'iconCodePoint': icon.codePoint,
+            'order_index': maxOrder,
+            'isFavorite': 0,
+          });
+        }
+      }
+
+      // Zmień kolejność przycisków rosnąco po ml
+      final allButtons = await db.query(
+        'water_buttons',
+        orderBy: 'milliliters ASC',
+      );
+      for (int i = 0; i < allButtons.length; i++) {
+        await db.update(
+          'water_buttons',
+          {'order_index': i + 1},
+          where: 'id = ?',
+          whereArgs: [allButtons[i]['id']],
+        );
+      }
     }
   }
 
@@ -418,7 +462,7 @@ class DatabaseHelper {
             ),
             order: map['order_index'] as int,
             isFavorite: (map['isFavorite'] as int?) == 1,
-            assetPath: WaterButton.getAssetForMilliliters(
+            assetPath: WaterButton.getClosestAsset(
               map['milliliters'] as int,
             ),
           ),

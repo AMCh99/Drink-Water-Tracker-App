@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Small tea cup with handle -->
+  <path d="M8 7L9 20C9 21.1 9.9 22 11 22H13C14.1 22 15 21.1 15 20L16 7"/>
+  <line x1="7" y1="7" x2="17" y2="7"/>
+  <path d="M16 10h1.5c1.1 0 2 .9 2 2v1c0 1.1-.9 2-2 2H16"/>
+</svg>
