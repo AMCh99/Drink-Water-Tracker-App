@@ -11,6 +11,9 @@ class GlassContainer extends StatelessWidget {
   final double opacity;
   final Color? borderColor;
   final double borderWidth;
+  /// Gdy false — pomija kosztowny BackdropFilter (blur), zachowując efekt
+  /// szkła przez kolor i border. Używaj false w listach dla wydajności.
+  final bool enableBlur;
 
   const GlassContainer({
     super.key,
@@ -22,6 +25,7 @@ class GlassContainer extends StatelessWidget {
     this.opacity = 0.12,
     this.borderColor,
     this.borderWidth = 1.0,
+    this.enableBlur = true,
   });
 
   @override
@@ -29,25 +33,51 @@ class GlassContainer extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isOled = Theme.of(context).scaffoldBackgroundColor == Colors.black;
 
+    // Lekko wyższy opacity gdy brak blur — kompensuje brak efektu frosted
     final bgColor = isOled
-        ? Colors.white.withOpacity(0.22)
+        ? Colors.white.withValues(alpha: enableBlur ? 0.22 : 0.14)
         : isDark
-        ? Colors.white.withOpacity(0.28)
-        : Colors.white.withOpacity(0.55);
+        ? Colors.white.withValues(alpha: enableBlur ? 0.28 : 0.18)
+        : Colors.white.withValues(alpha: enableBlur ? 0.55 : 0.45);
 
     final border =
         borderColor ??
         (isOled
-            ? Colors.white.withOpacity(0.35)
+            ? Colors.white.withValues(alpha: 0.25)
             : isDark
-            ? Colors.white.withOpacity(0.45)
-            : Colors.white.withOpacity(0.7));
+            ? Colors.white.withValues(alpha: 0.30)
+            : Colors.white.withValues(alpha: 0.60));
 
     final highlightColor = isOled
-        ? Colors.white.withOpacity(0.18)
+        ? Colors.white.withValues(alpha: enableBlur ? 0.18 : 0.10)
         : isDark
-        ? Colors.white.withOpacity(0.22)
-        : Colors.white.withOpacity(0.35);
+        ? Colors.white.withValues(alpha: enableBlur ? 0.22 : 0.12)
+        : Colors.white.withValues(alpha: enableBlur ? 0.35 : 0.20);
+
+    final decorated = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: border, width: borderWidth),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [highlightColor, Colors.transparent],
+        ),
+      ),
+      child: child,
+    );
+
+    if (!enableBlur) {
+      return Container(
+        margin: margin,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: decorated,
+        ),
+      );
+    }
 
     return Container(
       margin: margin,
@@ -55,20 +85,7 @@ class GlassContainer extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(color: border, width: borderWidth),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [highlightColor, Colors.transparent],
-              ),
-            ),
-            child: child,
-          ),
+          child: decorated,
         ),
       ),
     );

@@ -79,6 +79,7 @@ class _StatsScreenState extends State<StatsScreen>
   Future<void> _loadWeeklyStats() async {
     final stats = await _dbHelper.getWeeklyStats();
     final settings = await _dbHelper.getDaySettings();
+    if (!mounted) return;
     setState(() {
       _weeklyStats = stats;
       _settings = settings;
@@ -87,12 +88,14 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   Future<void> _loadMonthlyStats() async {
+    if (!mounted) return;
     setState(() => _isLoadingMonthly = true);
     final stats = await _dbHelper.getMonthlyStats(
       _selectedYear,
       _selectedMonth,
     );
     final settings = await _dbHelper.getDaySettings();
+    if (!mounted) return;
     setState(() {
       _monthlyStats = stats;
       _settings = settings;
@@ -101,8 +104,10 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   Future<void> _loadYearlyStats() async {
+    if (!mounted) return;
     setState(() => _isLoadingYearly = true);
     final stats = await _dbHelper.getYearlyStats(_selectedYearForYearly);
+    if (!mounted) return;
     setState(() {
       _yearlyStats = stats;
       _isLoadingYearly = false;
@@ -111,15 +116,18 @@ class _StatsScreenState extends State<StatsScreen>
 
   Future<void> _loadStreak() async {
     final streak = await _dbHelper.getCurrentStreak();
+    if (!mounted) return;
     setState(() {
       _currentStreak = streak;
     });
   }
 
   Future<void> _loadTrends() async {
+    if (!mounted) return;
     setState(() => _isLoadingTrends = true);
     final weeklyAvg = await _dbHelper.getWeeklyAverages();
     final monthlyAvg = await _dbHelper.getMonthlyAverages();
+    if (!mounted) return;
     setState(() {
       _weeklyAverages = weeklyAvg;
       _monthlyAverages = monthlyAvg;

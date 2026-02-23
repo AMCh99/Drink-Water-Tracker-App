@@ -233,8 +233,8 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   late ConfettiController _confettiController;
   bool _goalCelebratedToday = false;
 
-  // Audio
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  // Audio — lazy init przy pierwszym użyciu
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -261,7 +261,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     WidgetsBinding.instance.removeObserver(this);
     _progressController.dispose();
     _confettiController.dispose();
-    _audioPlayer.dispose();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -273,7 +273,10 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     }
   }
 
-  Future<void> _loadData({bool playEffects = false}) async {
+  Future<void> _loadData({
+    bool playEffects = false,
+    bool rescheduleNotifications = false,
+  }) async {
     print('DEBUG: Ładuję dane...');
     final total = await _dbHelper.getTotalWaterForDay(DateTime.now());
     final entries = await _dbHelper.getWaterEntriesForDay(DateTime.now());
@@ -310,7 +313,8 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     if (playEffects) {
       HapticFeedback.mediumImpact();
       try {
-        await _audioPlayer.play(AssetSource('sounds/water_drop.wav'));
+        _audioPlayer ??= AudioPlayer();
+        await _audioPlayer!.play(AssetSource('sounds/water_drop.wav'));
       } catch (_) {
         // Ignoruj błędy audio
       }
@@ -328,8 +332,10 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     // Zaktualizuj widget
     await WidgetHelper.updateWidget();
 
-    // Przelicz powiadomienia (po dodaniu/usunięciu wody)
-    await NotificationService.instance.scheduleReminders(settings);
+    // Przelicz powiadomienia tylko gdy zmieniono ustawienia
+    if (rescheduleNotifications) {
+      await NotificationService.instance.scheduleReminders(settings);
+    }
   }
 
   Future<void> _addLastAmount() async {
@@ -397,7 +403,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
           t: widget.t,
         ),
       ),
-    ).then((_) => _loadData());
+    ).then((_) => _loadData(rescheduleNotifications: true));
   }
 
   @override
@@ -472,78 +478,79 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                         ),
                         const SizedBox(height: 16),
                         // Pasek postępu — animowany glass style
-                        AnimatedBuilder(
-                          animation: _progressController,
-                          builder: (context, child) {
-                            final progress = _progressAnimation.value;
-                            return Column(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        height: 14,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      FractionallySizedBox(
-                                        widthFactor: progress,
-                                        child: Container(
+                        RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _progressController,
+                            builder: (context, child) {
+                              final progress = _progressAnimation.value;
+                              return Column(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Stack(
+                                      children: [
+                                        Container(
                                           height: 14,
                                           decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: progress >= 1.0
-                                                  ? [
-                                                      Colors.green.shade400,
-                                                      Colors.green.shade300,
-                                                    ]
-                                                  : [
-                                                      Colors.blue.shade400,
-                                                      Colors.cyan.shade300,
-                                                    ],
-                                            ),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withOpacity(0.15),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color:
-                                                    (progress >= 1.0
-                                                            ? Colors.green
-                                                            : Colors.blue)
-                                                        .withOpacity(0.4),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                        FractionallySizedBox(
+                                          widthFactor: progress,
+                                          child: Container(
+                                            height: 14,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: progress >= 1.0
+                                                    ? [
+                                                        Colors.green.shade400,
+                                                        Colors.green.shade300,
+                                                      ]
+                                                    : [
+                                                        Colors.blue.shade400,
+                                                        Colors.cyan.shade300,
+                                                      ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color:
+                                                      (progress >= 1.0
+                                                              ? Colors.green
+                                                              : Colors.blue)
+                                                          .withOpacity(0.4),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.7),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.7),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                ],
+                              );
+                            },
+                          ),
                         ),
                         // Przycisk "Dodaj ponownie" — glass style
                         if (_lastEntry != null) ...[
@@ -553,6 +560,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                             borderRadius: 30,
                             blur: 10,
                             opacity: 0.08,
+                            enableBlur: false,
                             child: InkWell(
                               onTap: _addLastAmount,
                               borderRadius: BorderRadius.circular(30),
@@ -621,6 +629,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               borderRadius: 28,
               blur: 15,
               opacity: 0.15,
+              enableBlur: false,
               child: InkWell(
                 onTap: _openAddWaterScreen,
                 borderRadius: BorderRadius.circular(28),
@@ -703,6 +712,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       borderRadius: 16,
       blur: 10,
       opacity: 0.08,
+      enableBlur: false,
       child: Row(
         children: [
           // Ikona
