@@ -6,7 +6,7 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _translations = {
     // ==================== OGÓLNE ====================
-    'appTitle': {'pl': 'Drink water', 'en': 'Drink water'},
+    'appTitle': {'pl': 'BeHydrated', 'en': 'BeHydrated'},
 
     // ==================== GŁÓWNY EKRAN ====================
     'statistics': {'pl': 'Statystyki', 'en': 'Statistics'},

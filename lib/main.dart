@@ -20,12 +20,7 @@ void main() async {
   await initializeDateFormatting('pl');
   await initializeDateFormatting('en_US');
 
-  // Inicjalizacja powiadomień
-  await NotificationService.instance.init();
-  // Zaplanuj przypomnienia na podstawie zapisanych ustawień
-  final settings = await DatabaseHelper.instance.getDaySettings();
-  await NotificationService.instance.scheduleReminders(settings);
-
+  // Nie blokuj startu aplikacji — powiadomienia i baza zainicjują się po UI
   runApp(const MyApp());
 }
 
@@ -52,14 +47,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _loadSettings() async {
-    final settings = await DatabaseHelper.instance.getDaySettings();
-    setState(() {
-      _isOled = settings.themeMode == 'oled';
-      _themeMode = _stringToThemeMode(settings.themeMode);
-      _language = settings.language;
-      t = AppLocalizations(_language);
-      _isLoading = false;
-    });
+    try {
+      final settings = await DatabaseHelper.instance.getDaySettings().timeout(
+        const Duration(seconds: 5),
+      );
+      if (!mounted) return;
+      setState(() {
+        _isOled = settings.themeMode == 'oled';
+        _themeMode = _stringToThemeMode(settings.themeMode);
+        _language = settings.language;
+        t = AppLocalizations(_language);
+        _isLoading = false;
+      });
+    } catch (_) {
+      // Nie blokuj — pokaż UI z domyślnymi ustawieniami
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   ThemeMode _stringToThemeMode(String mode) {
@@ -129,7 +135,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     return MaterialApp(
-      title: 'Drink water',
+      title: 'BeHydrated',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -254,6 +260,18 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     );
 
     _loadData();
+    _initNotifications();
+  }
+
+  /// Inicjalizacja powiadomień — po starcie UI żeby nie blokować ekranu
+  Future<void> _initNotifications() async {
+    try {
+      await NotificationService.instance.init();
+      final settings = await _dbHelper.getDaySettings();
+      await NotificationService.instance.scheduleReminders(settings);
+    } catch (_) {
+      // Nie blokuj aplikacji gdy powiadomienia zawiodą
+    }
   }
 
   @override
@@ -277,15 +295,12 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     bool playEffects = false,
     bool rescheduleNotifications = false,
   }) async {
-    print('DEBUG: Ładuję dane...');
     final total = await _dbHelper.getTotalWaterForDay(DateTime.now());
     final entries = await _dbHelper.getWaterEntriesForDay(DateTime.now());
     final settings = await _dbHelper.getDaySettings();
     final lastEntry = await _dbHelper.getLastWaterEntry();
 
-    print(
-      'DEBUG: Total: $total, Entries: ${entries.length}, Settings: ${settings.dayStartHour}:${settings.dayStartMinute} - ${settings.dayEndHour}:${settings.dayEndMinute}',
-    );
+    if (!mounted) return;
 
     final newProgress = settings.dailyGoal > 0
         ? (total / settings.dailyGoal).clamp(0.0, 1.0)
