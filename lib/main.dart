@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'database/database_helper.dart';
 import 'models/water_entry.dart';
 import 'models/day_settings.dart';
+import 'models/water_button.dart';
 import 'screens/settings_screen.dart';
 import 'screens/add_water_screen.dart';
 import 'screens/stats_screen.dart';
@@ -199,8 +200,8 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   int _totalWater = 0;
   List<WaterEntry> _entries = [];
+  List<WaterButton> _favoriteButtons = [];
   DaySettings? _daySettings;
-  WaterEntry? _lastEntry;
 
   // Animacja postępu
   late AnimationController _progressController;
@@ -269,8 +270,13 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   }) async {
     final total = await _dbHelper.getTotalWaterForDay(DateTime.now());
     final entries = await _dbHelper.getWaterEntriesForDay(DateTime.now());
+    final buttons = await _dbHelper.getWaterButtons();
     final settings = await _dbHelper.getDaySettings();
-    final lastEntry = await _dbHelper.getLastWaterEntry();
+
+    final favoriteButtons = buttons
+        .where((button) => button.isFavorite)
+        .take(3)
+        .toList();
 
     if (!mounted) return;
 
@@ -312,8 +318,8 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     setState(() {
       _totalWater = total;
       _entries = entries;
+      _favoriteButtons = favoriteButtons;
       _daySettings = settings;
-      _lastEntry = lastEntry;
     });
 
     // Zaktualizuj widget
@@ -322,28 +328,6 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     // Przelicz powiadomienia tylko gdy zmieniono ustawienia
     if (rescheduleNotifications) {
       await NotificationService.instance.scheduleReminders(settings);
-    }
-  }
-
-  Future<void> _addLastAmount() async {
-    if (_lastEntry == null) return;
-
-    final entry = WaterEntry(
-      timestamp: DateTime.now(),
-      milliliters: _lastEntry!.milliliters,
-    );
-    await _dbHelper.insertWaterEntry(entry);
-    await _loadData(playEffects: true);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${widget.t.get('added')} ${_daySettings?.formatAmount(_lastEntry!.milliliters) ?? "${_lastEntry!.milliliters} ml"}',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -372,11 +356,10 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       context,
       MaterialPageRoute(builder: (context) => AddWaterScreen(t: widget.t)),
     );
+    if (!mounted) return;
 
-    // Jeśli result == true, oznacza że woda została dodana
-    if (result == true) {
-      await _loadData(playEffects: true);
-    }
+    // Odśwież zawsze po powrocie: wpisy mogły się zmienić, ale też ulubione.
+    await _loadData(playEffects: result == true);
   }
 
   void _openSettings() {
@@ -425,117 +408,116 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
           Column(
             children: [
               // Główny licznik wody
-              GlassContainer(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Column(
-                  children: [
-                    if (_daySettings != null) ...[
-                      // Wskaźnik kołowy — animowany
-                      RepaintBoundary(
-                        child: AnimatedBuilder(
-                          animation: _progressController,
-                          builder: (context, child) {
-                            final progress = _progressAnimation.value;
-                            final colorScheme = Theme.of(context).colorScheme;
-                            final isDark =
-                                Theme.of(context).brightness == Brightness.dark;
-                            final progressColor = progress >= 1.0
-                                ? Colors.green.shade500
-                                : colorScheme.primary;
-                            final trackColor = isDark
-                                ? const Color(0xFF262A33)
-                                : colorScheme.primary.withValues(alpha: 0.15);
-                            final currentAmount = _daySettings!.formatAmount(
-                              _totalWater,
-                            );
-                            final goalAmount = _daySettings!.formatAmount(
-                              _daySettings!.dailyGoal,
-                            );
+              SizedBox(
+                width: double.infinity,
+                child: GlassContainer(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  child: Column(
+                    children: [
+                      if (_daySettings != null) ...[
+                        // Wskaźnik kołowy — animowany
+                        RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _progressController,
+                            builder: (context, child) {
+                              final progress = _progressAnimation.value;
+                              final colorScheme = Theme.of(context).colorScheme;
+                              final isDark =
+                                  Theme.of(context).brightness ==
+                                  Brightness.dark;
+                              final progressColor = progress >= 1.0
+                                  ? Colors.green.shade500
+                                  : colorScheme.primary;
+                              final trackColor = isDark
+                                  ? const Color(0xFF262A33)
+                                  : colorScheme.primary.withValues(alpha: 0.15);
+                              final currentAmount = _daySettings!.formatAmount(
+                                _totalWater,
+                              );
+                              final goalAmount = _daySettings!.formatAmount(
+                                _daySettings!.dailyGoal,
+                              );
 
-                            return SizedBox(
-                              width: 220,
-                              height: 220,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 210,
-                                    height: 210,
-                                    child: CircularProgressIndicator(
-                                      value: 1,
-                                      strokeWidth: 16,
-                                      color: trackColor,
+                              return SizedBox(
+                                width: 220,
+                                height: 220,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 210,
+                                      height: 210,
+                                      child: CircularProgressIndicator(
+                                        value: 1,
+                                        strokeWidth: 16,
+                                        color: trackColor,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    width: 210,
-                                    height: 210,
-                                    child: CircularProgressIndicator(
-                                      value: progress,
-                                      strokeWidth: 16,
-                                      strokeCap: StrokeCap.round,
-                                      color: progressColor,
-                                      backgroundColor: Colors.transparent,
+                                    SizedBox(
+                                      width: 210,
+                                      height: 210,
+                                      child: CircularProgressIndicator(
+                                        value: progress,
+                                        strokeWidth: 16,
+                                        strokeCap: StrokeCap.round,
+                                        color: progressColor,
+                                        backgroundColor: Colors.transparent,
+                                      ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.water_drop_rounded,
-                                          size: 30,
-                                          color: progressColor,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '$currentAmount / $goalAmount',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: colorScheme.onSurface,
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.water_drop_rounded,
+                                            size: 30,
+                                            color: progressColor,
                                           ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          widget.t.get('dailyGoal'),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: colorScheme.onSurface
-                                                .withValues(alpha: 0.7),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            '$currentAmount / $goalAmount',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: colorScheme.onSurface,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            widget.t.get('dailyGoal'),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: colorScheme.onSurface
+                                                  .withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_lastEntry != null)
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.tonalIcon(
-                            onPressed: _addLastAmount,
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: Text(
-                              '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
-                            ),
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        if (_favoriteButtons.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: _favoriteButtons
+                                .map(_buildFavoriteAmountButton)
+                                .toList(),
+                          ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
 
@@ -604,6 +586,25 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
         onPressed: _openAddWaterScreen,
         icon: const Icon(Icons.add_rounded),
         label: Text(widget.t.get('addWater')),
+      ),
+    );
+  }
+
+  Widget _buildFavoriteAmountButton(WaterButton button) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return OutlinedButton.icon(
+      onPressed: () => _addAgain(button.milliliters),
+      icon: const Icon(Icons.water_drop_outlined, size: 16),
+      label: Text('+ ${button.milliliters} ml'),
+      style: OutlinedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        minimumSize: const Size(0, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        foregroundColor: colorScheme.primary,
+        side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.7)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
