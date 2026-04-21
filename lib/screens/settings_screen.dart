@@ -26,11 +26,13 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   DaySettings? _settings;
+  String _selectedThemeMode = 'light';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _selectedThemeMode = widget.currentThemeMode;
     _loadSettings();
   }
 
@@ -39,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() {
       _settings = settings;
+      _selectedThemeMode = settings.themeMode;
       _isLoading = false;
     });
   }
@@ -223,6 +226,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _applyTheme(String mode) async {
+    if (_selectedThemeMode == mode) return;
+
+    setState(() {
+      _selectedThemeMode = mode;
+    });
+
+    await widget.onThemeChanged(mode);
+    await _loadSettings();
+  }
+
+  Widget _buildThemeChoiceCard({
+    required String mode,
+    required String label,
+    required Color backgroundColor,
+    required Color labelColor,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = _selectedThemeMode == mode;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _applyTheme(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 118,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.18),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : labelColor.withValues(alpha: 0.22),
+                ),
+                child: Icon(
+                  isSelected ? Icons.check_rounded : Icons.brightness_1,
+                  size: 22,
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : labelColor.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showThemeDialog() async {
     return showDialog(
       context: context,
@@ -230,10 +308,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: Text(widget.t.get('chooseTheme')),
           content: RadioGroup<String>(
-            groupValue: widget.currentThemeMode,
+            groupValue: _selectedThemeMode,
             onChanged: (value) {
               if (value == null) return;
-              widget.onThemeChanged(value);
+              _applyTheme(value);
               Navigator.pop(context);
             },
             child: Column(
@@ -353,62 +431,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
+            padding: const EdgeInsets.only(left: 4, top: 16, bottom: 10),
             child: Text(
               widget.t.get('appearance'),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ),
           GlassContainer(
-            borderRadius: 16,
-            padding: EdgeInsets.zero,
+            borderRadius: 20,
+            padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
+                Row(
+                  children: [
+                    Text(
+                      widget.t.get('theme'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  leading: Icon(
-                    widget.currentThemeMode == 'light'
-                        ? Icons.light_mode_rounded
-                        : widget.currentThemeMode == 'oled'
-                        ? Icons.brightness_1_rounded
-                        : Icons.dark_mode_rounded,
-                  ),
-                  title: Text(widget.t.get('theme')),
-                  subtitle: Text(
-                    widget.currentThemeMode == 'light'
-                        ? widget.t.get('themeLight')
-                        : widget.currentThemeMode == 'oled'
-                        ? widget.t.get('themeOled')
-                        : widget.t.get('themeDark'),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                  ),
-                  onTap: () => _showThemeDialog(),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: _showThemeDialog,
+                      icon: const Icon(Icons.tune_rounded),
+                      tooltip: widget.t.get('chooseTheme'),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildThemeChoiceCard(
+                      mode: 'light',
+                      label: widget.t.get('themeLight'),
+                      backgroundColor: Colors.white,
+                      labelColor: const Color(0xFF1F2937),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildThemeChoiceCard(
+                      mode: 'dark',
+                      label: widget.t.get('themeDark'),
+                      backgroundColor: const Color(0xFF2E333D),
+                      labelColor: Colors.white,
+                    ),
+                    const SizedBox(width: 10),
+                    _buildThemeChoiceCard(
+                      mode: 'oled',
+                      label: widget.t.get('themeOled'),
+                      backgroundColor: Colors.black,
+                      labelColor: Colors.white,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Divider(
                   height: 1,
-                  indent: 16,
-                  endIndent: 16,
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.08),
                 ),
                 ListTile(
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(16),
-                    ),
-                  ),
                   leading: const Icon(Icons.language_rounded),
                   title: Text(widget.t.get('language')),
                   subtitle: Text(
@@ -419,6 +503,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     size: 16,
                   ),
                   onTap: () => _showLanguageDialog(),
+                  contentPadding: EdgeInsets.zero,
                 ),
               ],
             ),

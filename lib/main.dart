@@ -427,139 +427,132 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
               // Główny licznik wody
               GlassContainer(
                 margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.water_drop_rounded,
-                          size: 40,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          _daySettings?.formatAmount(_totalWater) ??
-                              '$_totalWater ml',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     if (_daySettings != null) ...[
-                      Text(
-                        '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Pasek postępu — animowany
+                      // Wskaźnik kołowy — animowany
                       RepaintBoundary(
                         child: AnimatedBuilder(
                           animation: _progressController,
                           builder: (context, child) {
                             final progress = _progressAnimation.value;
-                            return Column(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        height: 14,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                            final colorScheme = Theme.of(context).colorScheme;
+                            final isDark =
+                                Theme.of(context).brightness == Brightness.dark;
+                            final progressColor = progress >= 1.0
+                                ? Colors.green.shade500
+                                : colorScheme.primary;
+                            final trackColor = isDark
+                                ? const Color(0xFF262A33)
+                                : colorScheme.primary.withValues(alpha: 0.15);
+                            final currentAmount = _daySettings!.formatAmount(
+                              _totalWater,
+                            );
+                            final goalAmount = _daySettings!.formatAmount(
+                              _daySettings!.dailyGoal,
+                            );
+
+                            return SizedBox(
+                              width: 220,
+                              height: 220,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 210,
+                                    height: 210,
+                                    child: CircularProgressIndicator(
+                                      value: 1,
+                                      strokeWidth: 16,
+                                      color: trackColor,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 210,
+                                    height: 210,
+                                    child: CircularProgressIndicator(
+                                      value: progress,
+                                      strokeWidth: 16,
+                                      strokeCap: StrokeCap.round,
+                                      color: progressColor,
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.water_drop_rounded,
+                                          size: 30,
+                                          color: progressColor,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '$currentAmount / $goalAmount',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurface,
                                           ),
                                         ),
-                                      ),
-                                      FractionallySizedBox(
-                                        widthFactor: progress,
-                                        child: Container(
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: progress >= 1.0
-                                                  ? [
-                                                      Colors.green.shade400,
-                                                      Colors.green.shade300,
-                                                    ]
-                                                  : [
-                                                      Colors.blue.shade400,
-                                                      Colors.cyan.shade300,
-                                                    ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color:
-                                                    (progress >= 1.0
-                                                            ? Colors.green
-                                                            : Colors.blue)
-                                                        .withValues(alpha: 0.4),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          widget.t.get('dailyGoal'),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.7),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             );
                           },
                         ),
                       ),
-                      // Przycisk "Dodaj ponownie"
-                      if (_lastEntry != null) ...[
-                        const SizedBox(height: 16),
-                        FilledButton.tonal(
-                          onPressed: _addLastAmount,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.refresh_rounded, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
-                              ),
-                            ],
+                      const SizedBox(height: 16),
+                      if (_lastEntry != null)
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            onPressed: _addLastAmount,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: Text(
+                              '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                            ),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
                           ),
                         ),
-                      ],
                     ],
                   ],
                 ),
               ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.t.get('history'),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+
               // Lista wpisów
               Expanded(
                 child: _entries.isEmpty
@@ -579,7 +572,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                         itemCount: _entries.length,
                         itemBuilder: (context, index) {
                           final entry = _entries[index];
-                          return _buildGlassEntryTile(entry);
+                          return _buildEntryTile(entry);
                         },
                       ),
               ),
@@ -615,7 +608,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     );
   }
 
-  Widget _buildGlassEntryTile(WaterEntry entry) {
+  Widget _buildEntryTile(WaterEntry entry) {
     final timeFormat = DateFormat('HH:mm');
     final status = _daySettings != null
         ? _dbHelper.getEntryStatus(entry.timestamp, _daySettings!)

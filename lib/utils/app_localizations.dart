@@ -88,6 +88,7 @@ class AppLocalizations {
     'avgDaily': {'pl': 'Średnio dziennie', 'en': 'Daily average'},
     'goalReached': {'pl': 'Cel osiągnięty', 'en': 'Goal reached'},
     'details': {'pl': 'Szczegóły', 'en': 'Details'},
+    'history': {'pl': 'Historia', 'en': 'History'},
     'today': {'pl': 'Dzisiaj', 'en': 'Today'},
     'goal': {'pl': 'Cel', 'en': 'Goal'},
     'goalReachedDays': {'pl': 'Cel osiągnięty:', 'en': 'Goal reached:'},

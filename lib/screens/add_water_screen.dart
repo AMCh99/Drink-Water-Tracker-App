@@ -28,6 +28,7 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
 
   Future<void> _loadButtons() async {
     final buttons = await _dbHelper.getWaterButtons();
+    if (!mounted) return;
     setState(() {
       _waterButtons = buttons;
       _isLoading = false;
@@ -135,16 +136,16 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.t.get('addWaterTitle'))),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         child: Column(
           children: [
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 1.3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                  childAspectRatio: 1,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
                 ),
                 itemCount: _waterButtons.length,
                 itemBuilder: (context, index) {
@@ -154,22 +155,20 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton.tonal(
+            FilledButton.icon(
               onPressed: _showCustomAmountDialog,
               style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
+                minimumSize: const Size(double.infinity, 58),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.add_rounded),
-                  const SizedBox(width: 8),
-                  Text(widget.t.get('addCustomAmount')),
-                ],
-              ),
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              label: Text(widget.t.get('addCustomAmount')),
             ),
           ],
         ),
@@ -178,15 +177,19 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
   }
 
   Widget _buildWaterButton(WaterButton button) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final assetPath =
-        button.assetPath ??
-        WaterButton.getClosestAsset(button.milliliters);
+        button.assetPath ?? WaterButton.getClosestAsset(button.milliliters);
 
     return GlassContainer(
-      borderRadius: 16,
+      borderRadius: 28,
+      color: isDark
+          ? const Color(0xFF171A20)
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
       child: InkWell(
         onTap: () => _addWater(button.milliliters),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
             Center(
@@ -196,54 +199,61 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                   if (assetPath != null && assetPath.endsWith('.svg'))
                     SvgPicture.asset(
                       assetPath,
-                      width: 52,
-                      height: 52,
+                      width: 64,
+                      height: 64,
                       colorFilter: ColorFilter.mode(
-                        button.isFavorite
-                            ? Colors.amber
-                            : Theme.of(context).colorScheme.primary,
+                        button.isFavorite ? Colors.amber : colorScheme.primary,
                         BlendMode.srcIn,
                       ),
                     )
                   else if (assetPath != null)
-                    Image.asset(assetPath, width: 52, height: 52)
+                    Image.asset(assetPath, width: 64, height: 64)
                   else
                     Icon(
                       button.icon,
-                      size: 48,
+                      size: 62,
                       color: button.isFavorite
                           ? Colors.amber
-                          : Theme.of(context).colorScheme.primary,
+                          : colorScheme.primary,
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     '${button.milliliters} ml',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: button.isFavorite
                           ? FontWeight.bold
-                          : FontWeight.w500,
+                          : FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
             Positioned(
-              top: 4,
-              right: 4,
-              child: IconButton(
-                icon: Icon(
-                  button.isFavorite
-                      ? Icons.star_rounded
-                      : Icons.star_border_rounded,
-                  color: button.isFavorite
-                      ? Colors.amber
-                      : Colors.grey.withValues(alpha: 0.5),
-                  size: 24,
+              top: 10,
+              right: 10,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _toggleFavorite(button),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.75),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    button.isFavorite
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: button.isFavorite
+                        ? Colors.amber
+                        : Colors.grey.withValues(alpha: 0.6),
+                    size: 19,
+                  ),
                 ),
-                onPressed: () => _toggleFavorite(button),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
               ),
             ),
           ],
