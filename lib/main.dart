@@ -142,9 +142,7 @@ class _MyAppState extends State<MyApp> {
           seedColor: Colors.blue,
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: Colors.transparent,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.dark,
@@ -160,20 +158,20 @@ class _MyAppState extends State<MyApp> {
               ),
               scaffoldBackgroundColor: Colors.black,
               appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.transparent,
+                backgroundColor: Colors.black,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 systemOverlayStyle: SystemUiOverlayStyle.light,
               ),
               cardTheme: CardThemeData(
-                color: Colors.white.withOpacity(0.06),
+                color: const Color(0xFF1A1A1A),
                 elevation: 0,
               ),
               dialogTheme: const DialogThemeData(
-                backgroundColor: Color(0xFF121212),
+                backgroundColor: Color(0xFF1A1A1A),
               ),
               bottomSheetTheme: const BottomSheetThemeData(
-                backgroundColor: Color(0xFF121212),
+                backgroundColor: Color(0xFF1A1A1A),
               ),
               useMaterial3: true,
             )
@@ -182,9 +180,7 @@ class _MyAppState extends State<MyApp> {
                 seedColor: Colors.blue,
                 brightness: Brightness.dark,
               ),
-              scaffoldBackgroundColor: Colors.transparent,
               appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.transparent,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -423,257 +419,195 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassBackground(
-      child: Stack(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.t.get('appTitle'),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart_rounded),
+            tooltip: widget.t.get('statistics'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StatsScreen(t: widget.t),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
+      body: Stack(
         children: [
-          Scaffold(
-            appBar: AppBar(
-              title: Text(
-                widget.t.get('appTitle'),
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.bar_chart_rounded),
-                  tooltip: widget.t.get('statistics'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StatsScreen(t: widget.t),
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings_rounded),
-                  onPressed: _openSettings,
-                ),
-              ],
-            ),
-            body: Column(
-              children: [
-                // Główny licznik wody — Liquid Glass
-                GlassContainer(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
-                  blur: 20,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.water_drop_rounded,
-                            size: 40,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _daySettings?.formatAmount(_totalWater) ??
-                                '$_totalWater ml',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (_daySettings != null) ...[
+          Column(
+            children: [
+              // Główny licznik wody
+              GlassContainer(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.water_drop_rounded,
+                          size: 40,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
                         Text(
-                          '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
+                          _daySettings?.formatAmount(_totalWater) ??
+                              '$_totalWater ml',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.7),
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        // Pasek postępu — animowany glass style
-                        RepaintBoundary(
-                          child: AnimatedBuilder(
-                            animation: _progressController,
-                            builder: (context, child) {
-                              final progress = _progressAnimation.value;
-                              return Column(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Stack(
-                                      children: [
-                                        Container(
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_daySettings != null) ...[
+                      Text(
+                        '${widget.t.get('ofGoal')} ${_daySettings!.formatAmount(_daySettings!.dailyGoal)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Pasek postępu — animowany
+                      RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: _progressController,
+                          builder: (context, child) {
+                            final progress = _progressAnimation.value;
+                            return Column(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      FractionallySizedBox(
+                                        widthFactor: progress,
+                                        child: Container(
                                           height: 14,
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withOpacity(0.15),
+                                            gradient: LinearGradient(
+                                              colors: progress >= 1.0
+                                                  ? [
+                                                      Colors.green.shade400,
+                                                      Colors.green.shade300,
+                                                    ]
+                                                  : [
+                                                      Colors.blue.shade400,
+                                                      Colors.cyan.shade300,
+                                                    ],
+                                            ),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
-                                          ),
-                                        ),
-                                        FractionallySizedBox(
-                                          widthFactor: progress,
-                                          child: Container(
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: progress >= 1.0
-                                                    ? [
-                                                        Colors.green.shade400,
-                                                        Colors.green.shade300,
-                                                      ]
-                                                    : [
-                                                        Colors.blue.shade400,
-                                                        Colors.cyan.shade300,
-                                                      ],
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color:
+                                                    (progress >= 1.0
+                                                            ? Colors.green
+                                                            : Colors.blue)
+                                                        .withValues(alpha: 0.4),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color:
-                                                      (progress >= 1.0
-                                                              ? Colors.green
-                                                              : Colors.blue)
-                                                          .withOpacity(0.4),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        // Przycisk "Dodaj ponownie" — glass style
-                        if (_lastEntry != null) ...[
-                          const SizedBox(height: 16),
-                          GlassContainer(
-                            padding: EdgeInsets.zero,
-                            borderRadius: 30,
-                            blur: 10,
-                            opacity: 0.08,
-                            enableBlur: false,
-                            child: InkWell(
-                              onTap: _addLastAmount,
-                              borderRadius: BorderRadius.circular(30),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.refresh_rounded,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ],
-                  ),
-                ),
-                // Lista wpisów
-                Expanded(
-                  child: _entries.isEmpty
-                      ? Center(
-                          child: Text(
-                            widget.t.get('noEntriesToday'),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _entries.length,
-                          itemBuilder: (context, index) {
-                            final entry = _entries[index];
-                            return _buildGlassEntryTile(entry);
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${(progress * 100).toStringAsFixed(0)}% ${widget.t.get('percentGoal')}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            );
                           },
                         ),
-                ),
-              ],
-            ),
-            floatingActionButton: GlassContainer(
-              padding: EdgeInsets.zero,
-              borderRadius: 28,
-              blur: 15,
-              opacity: 0.15,
-              enableBlur: false,
-              child: InkWell(
-                onTap: _openAddWaterScreen,
-                borderRadius: BorderRadius.circular(28),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.add_rounded,
-                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.t.get('addWater'),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                      // Przycisk "Dodaj ponownie"
+                      if (_lastEntry != null) ...[
+                        const SizedBox(height: 16),
+                        FilledButton.tonal(
+                          onPressed: _addLastAmount,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.refresh_rounded, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${widget.t.get('addAgain')} ${_daySettings!.formatAmount(_lastEntry!.milliliters)}',
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
-            ),
+              // Lista wpisów
+              Expanded(
+                child: _entries.isEmpty
+                    ? Center(
+                        child: Text(
+                          widget.t.get('noEntriesToday'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = _entries[index];
+                          return _buildGlassEntryTile(entry);
+                        },
+                      ),
+              ),
+            ],
           ),
           // Confetti overlay 🎉
           Align(
@@ -696,6 +630,11 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAddWaterScreen,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(widget.t.get('addWater')),
       ),
     );
   }
@@ -725,9 +664,6 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       borderRadius: 16,
-      blur: 10,
-      opacity: 0.08,
-      enableBlur: false,
       child: Row(
         children: [
           // Ikona
@@ -736,7 +672,9 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.15),
             ),
             child: Icon(
               Icons.water_drop_rounded,
@@ -766,7 +704,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
                         fontSize: 13,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.5),
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                     if (statusWidget != null) ...[
@@ -782,7 +720,9 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
           IconButton(
             icon: Icon(
               Icons.refresh_rounded,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
               size: 20,
             ),
             tooltip: widget.t.get('addAgainTooltip'),
@@ -791,7 +731,9 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
           IconButton(
             icon: Icon(
               Icons.delete_outline_rounded,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
               size: 20,
             ),
             tooltip: widget.t.get('deleteTooltip'),
@@ -809,7 +751,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

@@ -378,8 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
 
-    return LiquidGlassBackground(
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(title: Text(widget.t.get('settings'))),
         body: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -396,8 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             GlassContainer(
-              borderRadius: 16,
-              blur: 12,
+            borderRadius: 16,
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
@@ -434,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     endIndent: 16,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                   ListTile(
                     shape: const RoundedRectangleBorder(
@@ -470,8 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             GlassContainer(
-              borderRadius: 16,
-              blur: 12,
+            borderRadius: 16,
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
@@ -499,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     endIndent: 16,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                   ListTile(
                     leading: const Icon(Icons.restart_alt_rounded),
@@ -514,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     endIndent: 16,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                   ListTile(
                     leading: const Icon(Icons.flag_rounded),
@@ -534,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     endIndent: 16,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.08),
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                   ListTile(
                     shape: const RoundedRectangleBorder(
@@ -587,8 +584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             GlassContainer(
-              borderRadius: 16,
-              blur: 12,
+            borderRadius: 16,
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
@@ -636,7 +632,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       endIndent: 16,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.08),
+                    ).colorScheme.onSurface.withValues(alpha: 0.08),
                     ),
                     ListTile(
                       shape: const RoundedRectangleBorder(
@@ -674,8 +670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             GlassContainer(
-              borderRadius: 16,
-              blur: 12,
+            borderRadius: 16,
               padding: EdgeInsets.zero,
               child: ListTile(
                 shape: RoundedRectangleBorder(
@@ -683,11 +678,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 leading: const Icon(Icons.info_outline_rounded),
                 title: Text(widget.t.get('aboutApp')),
-                subtitle: const Text('Drink Water Tracker v1.0'),
+              subtitle: const Text('BeHydrated v1.0'),
                 onTap: () {
                   showAboutDialog(
                     context: context,
-                    applicationName: 'Drink Water Tracker',
+                  applicationName: 'BeHydrated',
                     applicationVersion: '1.0.0',
                     applicationIcon: const Icon(
                       Icons.water_drop_rounded,
@@ -701,7 +696,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
           ],
-        ),
       ),
     );
   }

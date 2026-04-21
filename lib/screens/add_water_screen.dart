@@ -132,60 +132,46 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
       );
     }
 
-    return LiquidGlassBackground(
-      child: Scaffold(
-        appBar: AppBar(title: Text(widget.t.get('addWaterTitle'))),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: _waterButtons.length,
-                  itemBuilder: (context, index) {
-                    final button = _waterButtons[index];
-                    return _buildWaterButton(button);
-                  },
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.t.get('addWaterTitle'))),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                 ),
+                itemCount: _waterButtons.length,
+                itemBuilder: (context, index) {
+                  final button = _waterButtons[index];
+                  return _buildWaterButton(button);
+                },
               ),
-              const SizedBox(height: 16),
-              GlassContainer(
-                padding: EdgeInsets.zero,
-                borderRadius: 16,
-                blur: 10,
-                child: InkWell(
-                  onTap: _showCustomAmountDialog,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: _showCustomAmountDialog,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.t.get('addCustomAmount'),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
-            ],
-          ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add_rounded),
+                  const SizedBox(width: 8),
+                  Text(widget.t.get('addCustomAmount')),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -198,8 +184,6 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
 
     return GlassContainer(
       borderRadius: 16,
-      blur: 12,
-      opacity: button.isFavorite ? 0.18 : 0.10,
       child: InkWell(
         onTap: () => _addWater(button.milliliters),
         borderRadius: BorderRadius.circular(16),
@@ -254,7 +238,7 @@ class _AddWaterScreenState extends State<AddWaterScreen> {
                       : Icons.star_border_rounded,
                   color: button.isFavorite
                       ? Colors.amber
-                      : Colors.grey.withOpacity(0.5),
+                      : Colors.grey.withValues(alpha: 0.5),
                   size: 24,
                 ),
                 onPressed: () => _toggleFavorite(button),

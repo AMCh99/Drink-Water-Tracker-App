@@ -161,8 +161,7 @@ class _StatsScreenState extends State<StatsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassBackground(
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           title: Text(widget.t.get('statsTitle')),
           actions: [
@@ -222,7 +221,6 @@ class _StatsScreenState extends State<StatsScreen>
         body: TabBarView(
           controller: _tabController,
           children: [_buildWeeklyTab(), _buildMonthlyTab(), _buildYearlyTab()],
-        ),
       ),
     );
   }
@@ -235,7 +233,6 @@ class _StatsScreenState extends State<StatsScreen>
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         borderRadius: 16,
-        blur: 12,
         child: Row(
           children: [
             const Text('\u{1F4A7}', style: TextStyle(fontSize: 28)),
@@ -255,7 +252,6 @@ class _StatsScreenState extends State<StatsScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       borderRadius: 16,
-      blur: 12,
       child: Row(
         children: [
           const Text('\u{1F525}', style: TextStyle(fontSize: 32)),
@@ -341,7 +337,6 @@ class _StatsScreenState extends State<StatsScreen>
             margin: const EdgeInsets.only(right: 6),
             padding: const EdgeInsets.all(16),
             borderRadius: 16,
-            blur: 12,
             child: Column(
               children: [
                 const Icon(Icons.water_drop, color: Colors.blue, size: 32),
@@ -366,7 +361,6 @@ class _StatsScreenState extends State<StatsScreen>
             margin: const EdgeInsets.only(left: 6),
             padding: const EdgeInsets.all(16),
             borderRadius: 16,
-            blur: 12,
             child: Column(
               children: [
                 Icon(
@@ -481,14 +475,14 @@ class _StatsScreenState extends State<StatsScreen>
           horizontalLines: [
             HorizontalLine(
               y: goalMl,
-              color: Colors.red.withOpacity(0.5),
+              color: Colors.red.withValues(alpha: 0.5),
               strokeWidth: 2,
               dashArray: [8, 4],
               label: HorizontalLineLabel(
                 show: true,
                 alignment: Alignment.topRight,
                 style: TextStyle(
-                  color: Colors.red.withOpacity(0.7),
+                  color: Colors.red.withValues(alpha: 0.7),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -616,7 +610,7 @@ class _StatsScreenState extends State<StatsScreen>
           horizontalLines: [
             HorizontalLine(
               y: goalMl,
-              color: Colors.red.withOpacity(0.3),
+              color: Colors.red.withValues(alpha: 0.3),
               strokeWidth: 1,
               dashArray: [6, 4],
             ),
@@ -647,7 +641,7 @@ class _StatsScreenState extends State<StatsScreen>
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
             ),
           ),
         ],
@@ -697,7 +691,6 @@ class _StatsScreenState extends State<StatsScreen>
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             borderRadius: 12,
-            blur: 10,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -747,8 +740,8 @@ class _StatsScreenState extends State<StatsScreen>
           return ListTile(
             leading: CircleAvatar(
               backgroundColor: stat.goalReached
-                  ? Colors.green.withOpacity(0.2)
-                  : Colors.blue.withOpacity(0.2),
+                  ? Colors.green.withValues(alpha: 0.2)
+                  : Colors.blue.withValues(alpha: 0.2),
               child: Icon(
                 stat.goalReached ? Icons.check : Icons.water_drop,
                 color: stat.goalReached ? Colors.green : Colors.blue,
@@ -762,7 +755,7 @@ class _StatsScreenState extends State<StatsScreen>
             ),
             subtitle: LinearProgressIndicator(
               value: stat.progress,
-              backgroundColor: Colors.grey.withOpacity(0.2),
+              backgroundColor: Colors.grey.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
                 stat.goalReached ? Colors.green : Colors.blue,
               ),
@@ -937,7 +930,7 @@ class _StatsScreenState extends State<StatsScreen>
               boxShadow: stat.goalReached && !stat.isFuture
                   ? [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
+                        color: Colors.green.withValues(alpha: 0.3),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
@@ -1087,7 +1080,6 @@ class _StatsScreenState extends State<StatsScreen>
     return GlassContainer(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       borderRadius: 14,
-      blur: 10,
       child: Column(
         children: [
           Icon(icon, color: color, size: 24),
@@ -1339,8 +1331,8 @@ class _StatsScreenState extends State<StatsScreen>
           return ListTile(
             leading: CircleAvatar(
               backgroundColor: pct >= 0.7
-                  ? Colors.green.withOpacity(0.2)
-                  : Colors.blue.withOpacity(0.2),
+                  ? Colors.green.withValues(alpha: 0.2)
+                  : Colors.blue.withValues(alpha: 0.2),
               child: Text(
                 '${(pct * 100).toInt()}%',
                 style: TextStyle(
@@ -1356,7 +1348,7 @@ class _StatsScreenState extends State<StatsScreen>
             ),
             subtitle: LinearProgressIndicator(
               value: pct,
-              backgroundColor: Colors.grey.withOpacity(0.2),
+              backgroundColor: Colors.grey.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
                 pct >= 0.7 ? Colors.green : Colors.blue,
               ),
@@ -1462,7 +1454,7 @@ class _StatsScreenState extends State<StatsScreen>
               pw.Header(
                 level: 0,
                 child: pw.Text(
-                  'Drink Water Tracker - Report',
+                  'BeHydrated - Report',
                   style: pw.TextStyle(
                     fontSize: 24,
                     fontWeight: pw.FontWeight.bold,
