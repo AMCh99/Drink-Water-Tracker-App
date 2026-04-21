@@ -87,19 +87,7 @@ class _MyAppState extends State<MyApp> {
     });
 
     final settings = await DatabaseHelper.instance.getDaySettings();
-    final updatedSettings = DaySettings(
-      id: settings.id,
-      dayStartHour: settings.dayStartHour,
-      dayStartMinute: settings.dayStartMinute,
-      dayEndHour: settings.dayEndHour,
-      dayEndMinute: settings.dayEndMinute,
-      dailyGoal: settings.dailyGoal,
-      unit: settings.unit,
-      themeMode: mode,
-      language: settings.language,
-      notificationsEnabled: settings.notificationsEnabled,
-      notificationIntervalMinutes: settings.notificationIntervalMinutes,
-    );
+    final updatedSettings = settings.copyWith(themeMode: mode);
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
 
@@ -110,19 +98,7 @@ class _MyAppState extends State<MyApp> {
     });
 
     final settings = await DatabaseHelper.instance.getDaySettings();
-    final updatedSettings = DaySettings(
-      id: settings.id,
-      dayStartHour: settings.dayStartHour,
-      dayStartMinute: settings.dayStartMinute,
-      dayEndHour: settings.dayEndHour,
-      dayEndMinute: settings.dayEndMinute,
-      dailyGoal: settings.dailyGoal,
-      unit: settings.unit,
-      themeMode: settings.themeMode,
-      language: lang,
-      notificationsEnabled: settings.notificationsEnabled,
-      notificationIntervalMinutes: settings.notificationIntervalMinutes,
-    );
+    final updatedSettings = settings.copyWith(language: lang);
     await DatabaseHelper.instance.updateDaySettings(updatedSettings);
   }
 

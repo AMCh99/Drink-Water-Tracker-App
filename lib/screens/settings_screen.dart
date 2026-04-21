@@ -36,10 +36,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final settings = await _dbHelper.getDaySettings();
+    if (!mounted) return;
     setState(() {
       _settings = settings;
       _isLoading = false;
     });
+  }
+
+  Future<void> _persistSettings(
+    DaySettings updatedSettings, {
+    bool rescheduleReminders = false,
+  }) async {
+    await _dbHelper.updateDaySettings(updatedSettings);
+    await _loadSettings();
+    if (rescheduleReminders) {
+      await NotificationService.instance.scheduleReminders(updatedSettings);
+    }
   }
 
   Future<void> _showDayTimeDialog() async {
@@ -116,25 +128,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 FilledButton(
                   onPressed: () async {
-                    final updatedSettings = DaySettings(
-                      id: _settings!.id,
+                    final updatedSettings = _settings!.copyWith(
                       dayStartHour: startTime.hour,
                       dayStartMinute: startTime.minute,
                       dayEndHour: endTime.hour,
                       dayEndMinute: endTime.minute,
-                      dailyGoal: _settings!.dailyGoal,
-                      unit: _settings!.unit,
-                      themeMode: _settings!.themeMode,
-                      language: _settings!.language,
-                      notificationsEnabled: _settings!.notificationsEnabled,
-                      notificationIntervalMinutes:
-                          _settings!.notificationIntervalMinutes,
                     );
-                    await _dbHelper.updateDaySettings(updatedSettings);
-                    await _loadSettings();
-                    // Przelicz powiadomienia po zmianie godzin dnia
-                    await NotificationService.instance.scheduleReminders(
+                    await _persistSettings(
                       updatedSettings,
+                      rescheduleReminders: true,
                     );
                     if (context.mounted) Navigator.pop(context);
                   },
@@ -199,22 +201,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 final goal = int.tryParse(controller.text);
                 if (goal != null && goal > 0) {
-                  final updatedSettings = DaySettings(
-                    id: _settings!.id,
-                    dayStartHour: _settings!.dayStartHour,
-                    dayStartMinute: _settings!.dayStartMinute,
-                    dayEndHour: _settings!.dayEndHour,
-                    dayEndMinute: _settings!.dayEndMinute,
-                    dailyGoal: goal,
-                    unit: _settings!.unit,
-                    themeMode: _settings!.themeMode,
-                    language: _settings!.language,
-                    notificationsEnabled: _settings!.notificationsEnabled,
-                    notificationIntervalMinutes:
-                        _settings!.notificationIntervalMinutes,
-                  );
-                  await _dbHelper.updateDaySettings(updatedSettings);
-                  await _loadSettings();
+                  final updatedSettings = _settings!.copyWith(dailyGoal: goal);
+                  await _persistSettings(updatedSettings);
                   if (context.mounted) Navigator.pop(context);
                 }
               },
@@ -241,41 +229,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(widget.t.get('chooseTheme')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: Text(widget.t.get('themeLight')),
-                secondary: const Icon(Icons.light_mode),
-                value: 'light',
-                groupValue: widget.currentThemeMode,
-                onChanged: (value) {
-                  widget.onThemeChanged(value!);
-                  Navigator.pop(context);
-                },
-              ),
-              RadioListTile<String>(
-                title: Text(widget.t.get('themeDark')),
-                secondary: const Icon(Icons.dark_mode),
-                value: 'dark',
-                groupValue: widget.currentThemeMode,
-                onChanged: (value) {
-                  widget.onThemeChanged(value!);
-                  Navigator.pop(context);
-                },
-              ),
-              RadioListTile<String>(
-                title: Text(widget.t.get('themeOled')),
-                subtitle: Text(widget.t.get('themeOledSubtitle')),
-                secondary: const Icon(Icons.brightness_1),
-                value: 'oled',
-                groupValue: widget.currentThemeMode,
-                onChanged: (value) {
-                  widget.onThemeChanged(value!);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+          content: RadioGroup<String>(
+            groupValue: widget.currentThemeMode,
+            onChanged: (value) {
+              if (value == null) return;
+              widget.onThemeChanged(value);
+              Navigator.pop(context);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                  title: Text(widget.t.get('themeLight')),
+                  secondary: const Icon(Icons.light_mode),
+                  value: 'light',
+                ),
+                RadioListTile<String>(
+                  title: Text(widget.t.get('themeDark')),
+                  secondary: const Icon(Icons.dark_mode),
+                  value: 'dark',
+                ),
+                RadioListTile<String>(
+                  title: Text(widget.t.get('themeOled')),
+                  subtitle: Text(widget.t.get('themeOledSubtitle')),
+                  secondary: const Icon(Icons.brightness_1),
+                  value: 'oled',
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -288,32 +269,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(widget.t.get('chooseLanguage')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: const Text('Polski'),
-                secondary: const Text('🇵🇱', style: TextStyle(fontSize: 24)),
-                value: 'pl',
-                groupValue: _settings?.language ?? 'pl',
-                onChanged: (value) {
-                  widget.onLanguageChanged(value!);
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-              ),
-              RadioListTile<String>(
-                title: const Text('English'),
-                secondary: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
-                value: 'en',
-                groupValue: _settings?.language ?? 'pl',
-                onChanged: (value) {
-                  widget.onLanguageChanged(value!);
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+          content: RadioGroup<String>(
+            groupValue: _settings?.language ?? 'pl',
+            onChanged: (value) {
+              if (value == null) return;
+              widget.onLanguageChanged(value);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                  title: const Text('Polski'),
+                  secondary: const Text('🇵🇱', style: TextStyle(fontSize: 24)),
+                  value: 'pl',
+                ),
+                RadioListTile<String>(
+                  title: const Text('English'),
+                  secondary: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
+                  value: 'en',
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -328,41 +306,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(widget.t.get('chooseInterval')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: NotificationService.availableIntervals.map((minutes) {
-              return RadioListTile<int>(
-                title: Text(
-                  NotificationService.intervalLabel(
-                    minutes,
-                    _settings!.language,
-                  ),
-                ),
-                value: minutes,
-                groupValue: _settings!.notificationIntervalMinutes,
-                onChanged: (value) async {
-                  final updatedSettings = DaySettings(
-                    id: _settings!.id,
-                    dayStartHour: _settings!.dayStartHour,
-                    dayStartMinute: _settings!.dayStartMinute,
-                    dayEndHour: _settings!.dayEndHour,
-                    dayEndMinute: _settings!.dayEndMinute,
-                    dailyGoal: _settings!.dailyGoal,
-                    unit: _settings!.unit,
-                    themeMode: _settings!.themeMode,
-                    language: _settings!.language,
-                    notificationsEnabled: _settings!.notificationsEnabled,
-                    notificationIntervalMinutes: value!,
-                  );
-                  await _dbHelper.updateDaySettings(updatedSettings);
-                  await _loadSettings();
-                  await NotificationService.instance.scheduleReminders(
-                    updatedSettings,
-                  );
-                  if (context.mounted) Navigator.pop(context);
-                },
+          content: RadioGroup<int>(
+            groupValue: _settings!.notificationIntervalMinutes,
+            onChanged: (value) async {
+              final updatedSettings = _settings!.copyWith(
+                notificationIntervalMinutes: value,
               );
-            }).toList(),
+              await _persistSettings(
+                updatedSettings,
+                rescheduleReminders: true,
+              );
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: NotificationService.availableIntervals.map((minutes) {
+                return RadioListTile<int>(
+                  title: Text(
+                    NotificationService.intervalLabel(
+                      minutes,
+                      _settings!.language,
+                    ),
+                  ),
+                  value: minutes,
+                );
+              }).toList(),
+            ),
           ),
         );
       },
@@ -379,323 +348,293 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     return Scaffold(
-        appBar: AppBar(title: Text(widget.t.get('settings'))),
-        body: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
-              child: Text(
-                widget.t.get('appearance'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
+      appBar: AppBar(title: Text(widget.t.get('settings'))),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
+            child: Text(
+              widget.t.get('appearance'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
               ),
             ),
-            GlassContainer(
+          ),
+          GlassContainer(
             borderRadius: 16,
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
-                    leading: Icon(
-                      widget.currentThemeMode == 'light'
-                          ? Icons.light_mode_rounded
-                          : widget.currentThemeMode == 'oled'
-                          ? Icons.brightness_1_rounded
-                          : Icons.dark_mode_rounded,
-                    ),
-                    title: Text(widget.t.get('theme')),
-                    subtitle: Text(
-                      widget.currentThemeMode == 'light'
-                          ? widget.t.get('themeLight')
-                          : widget.currentThemeMode == 'oled'
-                          ? widget.t.get('themeOled')
-                          : widget.t.get('themeDark'),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                    ),
-                    onTap: () => _showThemeDialog(),
                   ),
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(
-                      context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                  leading: Icon(
+                    widget.currentThemeMode == 'light'
+                        ? Icons.light_mode_rounded
+                        : widget.currentThemeMode == 'oled'
+                        ? Icons.brightness_1_rounded
+                        : Icons.dark_mode_rounded,
                   ),
-                  ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        bottom: Radius.circular(16),
-                      ),
-                    ),
-                    leading: const Icon(Icons.language_rounded),
-                    title: Text(widget.t.get('language')),
-                    subtitle: Text(
-                      AppLocalizations.languageName(
-                        _settings?.language ?? 'pl',
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                    ),
-                    onTap: () => _showLanguageDialog(),
+                  title: Text(widget.t.get('theme')),
+                  subtitle: Text(
+                    widget.currentThemeMode == 'light'
+                        ? widget.t.get('themeLight')
+                        : widget.currentThemeMode == 'oled'
+                        ? widget.t.get('themeOled')
+                        : widget.t.get('themeDark'),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
-              child: Text(
-                widget.t.get('day'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: () => _showThemeDialog(),
                 ),
-              ),
-            ),
-            GlassContainer(
-            borderRadius: 16,
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    leading: const Icon(Icons.schedule_rounded),
-                    title: Text(widget.t.get('dayHours')),
-                    subtitle: Text(
-                      '${_settings!.dayStartHour.toString().padLeft(2, '0')}:${_settings!.dayStartMinute.toString().padLeft(2, '0')} - '
-                      '${_settings!.dayEndHour.toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')}',
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                    ),
-                    onTap: _showDayTimeDialog,
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(
-                      context,
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
                   ).colorScheme.onSurface.withValues(alpha: 0.08),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.restart_alt_rounded),
-                    title: Text(widget.t.get('counterReset')),
-                    subtitle: Text(
-                      '${widget.t.get('counterResetSubtitle')} ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} ${widget.t.get('counterResetAfter')}',
-                    ),
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(
-                      context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.08),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.flag_rounded),
-                    title: Text(widget.t.get('dailyGoal')),
-                    subtitle: Text(
-                      _settings!.formatAmount(_settings!.dailyGoal),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                    ),
-                    onTap: _showDailyGoalDialog,
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(
-                      context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.08),
-                  ),
-                  ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        bottom: Radius.circular(16),
-                      ),
-                    ),
-                    leading: const Icon(Icons.straighten_rounded),
-                    title: Text(widget.t.get('units')),
-                    subtitle: Text(
-                      _settings!.unit == 'ml'
-                          ? widget.t.get('unitsMl')
-                          : widget.t.get('unitsOz'),
-                    ),
-                    trailing: Switch(
-                      value: _settings!.unit == 'oz',
-                      onChanged: (value) async {
-                        final updatedSettings = DaySettings(
-                          id: _settings!.id,
-                          dayStartHour: _settings!.dayStartHour,
-                          dayStartMinute: _settings!.dayStartMinute,
-                          dayEndHour: _settings!.dayEndHour,
-                          dayEndMinute: _settings!.dayEndMinute,
-                          dailyGoal: _settings!.dailyGoal,
-                          unit: value ? 'oz' : 'ml',
-                          themeMode: _settings!.themeMode,
-                          language: _settings!.language,
-                          notificationsEnabled: _settings!.notificationsEnabled,
-                          notificationIntervalMinutes:
-                              _settings!.notificationIntervalMinutes,
-                        );
-                        await _dbHelper.updateDaySettings(updatedSettings);
-                        await _loadSettings();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // ==================== POWIADOMIENIA ====================
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
-              child: Text(
-                widget.t.get('notifications'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
                 ),
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(16),
+                    ),
+                  ),
+                  leading: const Icon(Icons.language_rounded),
+                  title: Text(widget.t.get('language')),
+                  subtitle: Text(
+                    AppLocalizations.languageName(_settings?.language ?? 'pl'),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: () => _showLanguageDialog(),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
+            child: Text(
+              widget.t.get('day'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
               ),
             ),
-            GlassContainer(
+          ),
+          GlassContainer(
             borderRadius: 16,
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: const Radius.circular(16),
-                        bottom: Radius.circular(
-                          _settings!.notificationsEnabled ? 0 : 16,
-                        ),
-                      ),
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
-                    secondary: const Icon(Icons.notifications_rounded),
-                    title: Text(widget.t.get('notificationsEnabled')),
-                    subtitle: Text(
-                      widget.t.get('notificationsEnabledSubtitle'),
+                  ),
+                  leading: const Icon(Icons.schedule_rounded),
+                  title: Text(widget.t.get('dayHours')),
+                  subtitle: Text(
+                    '${_settings!.dayStartHour.toString().padLeft(2, '0')}:${_settings!.dayStartMinute.toString().padLeft(2, '0')} - '
+                    '${_settings!.dayEndHour.toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')}',
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: _showDayTimeDialog,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.restart_alt_rounded),
+                  title: Text(widget.t.get('counterReset')),
+                  subtitle: Text(
+                    '${widget.t.get('counterResetSubtitle')} ${((_settings!.dayEndHour + 3) % 24).toString().padLeft(2, '0')}:${_settings!.dayEndMinute.toString().padLeft(2, '0')} ${widget.t.get('counterResetAfter')}',
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.flag_rounded),
+                  title: Text(widget.t.get('dailyGoal')),
+                  subtitle: Text(_settings!.formatAmount(_settings!.dailyGoal)),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: _showDailyGoalDialog,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(16),
                     ),
-                    value: _settings!.notificationsEnabled,
+                  ),
+                  leading: const Icon(Icons.straighten_rounded),
+                  title: Text(widget.t.get('units')),
+                  subtitle: Text(
+                    _settings!.unit == 'ml'
+                        ? widget.t.get('unitsMl')
+                        : widget.t.get('unitsOz'),
+                  ),
+                  trailing: Switch(
+                    value: _settings!.unit == 'oz',
                     onChanged: (value) async {
-                      final updatedSettings = DaySettings(
-                        id: _settings!.id,
-                        dayStartHour: _settings!.dayStartHour,
-                        dayStartMinute: _settings!.dayStartMinute,
-                        dayEndHour: _settings!.dayEndHour,
-                        dayEndMinute: _settings!.dayEndMinute,
-                        dailyGoal: _settings!.dailyGoal,
-                        unit: _settings!.unit,
-                        themeMode: _settings!.themeMode,
-                        language: _settings!.language,
-                        notificationsEnabled: value,
-                        notificationIntervalMinutes:
-                            _settings!.notificationIntervalMinutes,
+                      final updatedSettings = _settings!.copyWith(
+                        unit: value ? 'oz' : 'ml',
                       );
-                      await _dbHelper.updateDaySettings(updatedSettings);
-                      await _loadSettings();
-                      await NotificationService.instance.scheduleReminders(
-                        updatedSettings,
-                      );
+                      await _persistSettings(updatedSettings);
                     },
                   ),
-                  if (_settings!.notificationsEnabled) ...[
-                    Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: Theme.of(
-                        context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.08),
-                    ),
-                    ListTile(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          bottom: Radius.circular(16),
-                        ),
-                      ),
-                      leading: const Icon(Icons.timer_rounded),
-                      title: Text(widget.t.get('notificationInterval')),
-                      subtitle: Text(
-                        NotificationService.intervalLabel(
-                          _settings!.notificationIntervalMinutes,
-                          _settings!.language,
-                        ),
-                      ),
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 16,
-                      ),
-                      onTap: _showIntervalDialog,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
-              child: Text(
-                widget.t.get('info'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
                 ),
+              ],
+            ),
+          ),
+          // ==================== POWIADOMIENIA ====================
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
+            child: Text(
+              widget.t.get('notifications'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
               ),
             ),
-            GlassContainer(
+          ),
+          GlassContainer(
             borderRadius: 16,
-              padding: EdgeInsets.zero,
-              child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                leading: const Icon(Icons.info_outline_rounded),
-                title: Text(widget.t.get('aboutApp')),
-              subtitle: const Text('BeHydrated v1.0'),
-                onTap: () {
-                  showAboutDialog(
-                    context: context,
-                  applicationName: 'BeHydrated',
-                    applicationVersion: '1.0.0',
-                    applicationIcon: const Icon(
-                      Icons.water_drop_rounded,
-                      size: 48,
-                      color: Colors.blue,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: const Radius.circular(16),
+                      bottom: Radius.circular(
+                        _settings!.notificationsEnabled ? 0 : 16,
+                      ),
                     ),
-                    children: [Text(widget.t.get('aboutAppDescription'))],
-                  );
-                },
+                  ),
+                  secondary: const Icon(Icons.notifications_rounded),
+                  title: Text(widget.t.get('notificationsEnabled')),
+                  subtitle: Text(widget.t.get('notificationsEnabledSubtitle')),
+                  value: _settings!.notificationsEnabled,
+                  onChanged: (value) async {
+                    final updatedSettings = _settings!.copyWith(
+                      notificationsEnabled: value,
+                    );
+                    await _persistSettings(
+                      updatedSettings,
+                      rescheduleReminders: true,
+                    );
+                  },
+                ),
+                if (_settings!.notificationsEnabled) ...[
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.08),
+                  ),
+                  ListTile(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(16),
+                      ),
+                    ),
+                    leading: const Icon(Icons.timer_rounded),
+                    title: Text(widget.t.get('notificationInterval')),
+                    subtitle: Text(
+                      NotificationService.intervalLabel(
+                        _settings!.notificationIntervalMinutes,
+                        _settings!.language,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                    ),
+                    onTap: _showIntervalDialog,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 20, bottom: 8),
+            child: Text(
+              widget.t.get('info'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
               ),
             ),
-            const SizedBox(height: 32),
-          ],
+          ),
+          GlassContainer(
+            borderRadius: 16,
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              leading: const Icon(Icons.info_outline_rounded),
+              title: Text(widget.t.get('aboutApp')),
+              subtitle: const Text('BeHydrated v1.0'),
+              onTap: () {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'BeHydrated',
+                  applicationVersion: '1.0.0',
+                  applicationIcon: const Icon(
+                    Icons.water_drop_rounded,
+                    size: 48,
+                    color: Colors.blue,
+                  ),
+                  children: [Text(widget.t.get('aboutAppDescription'))],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

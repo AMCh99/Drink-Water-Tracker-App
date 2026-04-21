@@ -26,6 +26,35 @@ class DaySettings {
     this.notificationIntervalMinutes = 60,
   });
 
+  DaySettings copyWith({
+    int? id,
+    int? dayStartHour,
+    int? dayStartMinute,
+    int? dayEndHour,
+    int? dayEndMinute,
+    int? dailyGoal,
+    String? unit,
+    String? themeMode,
+    String? language,
+    bool? notificationsEnabled,
+    int? notificationIntervalMinutes,
+  }) {
+    return DaySettings(
+      id: id ?? this.id,
+      dayStartHour: dayStartHour ?? this.dayStartHour,
+      dayStartMinute: dayStartMinute ?? this.dayStartMinute,
+      dayEndHour: dayEndHour ?? this.dayEndHour,
+      dayEndMinute: dayEndMinute ?? this.dayEndMinute,
+      dailyGoal: dailyGoal ?? this.dailyGoal,
+      unit: unit ?? this.unit,
+      themeMode: themeMode ?? this.themeMode,
+      language: language ?? this.language,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      notificationIntervalMinutes:
+          notificationIntervalMinutes ?? this.notificationIntervalMinutes,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

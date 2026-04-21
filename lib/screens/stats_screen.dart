@@ -62,7 +62,7 @@ class _StatsScreenState extends State<StatsScreen>
     _loadAllData();
   }
 
-  Future<void> _loadAllData() async {
+  void _loadAllData() {
     _loadWeeklyStats();
     _loadMonthlyStats();
     _loadYearlyStats();
@@ -162,65 +162,62 @@ class _StatsScreenState extends State<StatsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.t.get('statsTitle')),
-          actions: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.ios_share),
-              tooltip: widget.t.get('exportData'),
-              onSelected: (value) {
-                if (value == 'csv') _exportCSV();
-                if (value == 'pdf') _exportPDF();
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'csv',
-                  child: ListTile(
-                    leading: const Icon(Icons.table_chart),
-                    title: Text(widget.t.get('exportCSV')),
-                    subtitle: Text(
-                      widget.t.get('exportCSVDesc'),
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    contentPadding: EdgeInsets.zero,
+      appBar: AppBar(
+        title: Text(widget.t.get('statsTitle')),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.ios_share),
+            tooltip: widget.t.get('exportData'),
+            onSelected: (value) {
+              if (value == 'csv') _exportCSV();
+              if (value == 'pdf') _exportPDF();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'csv',
+                child: ListTile(
+                  leading: const Icon(Icons.table_chart),
+                  title: Text(widget.t.get('exportCSV')),
+                  subtitle: Text(
+                    widget.t.get('exportCSVDesc'),
+                    style: const TextStyle(fontSize: 11),
                   ),
+                  contentPadding: EdgeInsets.zero,
                 ),
-                PopupMenuItem(
-                  value: 'pdf',
-                  child: ListTile(
-                    leading: const Icon(Icons.picture_as_pdf),
-                    title: Text(widget.t.get('exportPDF')),
-                    subtitle: Text(
-                      widget.t.get('exportPDFDesc'),
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    contentPadding: EdgeInsets.zero,
+              ),
+              PopupMenuItem(
+                value: 'pdf',
+                child: ListTile(
+                  leading: const Icon(Icons.picture_as_pdf),
+                  title: Text(widget.t.get('exportPDF')),
+                  subtitle: Text(
+                    widget.t.get('exportPDFDesc'),
+                    style: const TextStyle(fontSize: 11),
                   ),
+                  contentPadding: EdgeInsets.zero,
                 ),
-              ],
-            ),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.bar_chart),
-                text: widget.t.get('week'),
-              ),
-              Tab(
-                icon: const Icon(Icons.calendar_month),
-                text: widget.t.get('month'),
-              ),
-              Tab(
-                icon: const Icon(Icons.calendar_view_month),
-                text: widget.t.get('year'),
               ),
             ],
           ),
-        ),
-        body: TabBarView(
+        ],
+        bottom: TabBar(
           controller: _tabController,
-          children: [_buildWeeklyTab(), _buildMonthlyTab(), _buildYearlyTab()],
+          tabs: [
+            Tab(icon: const Icon(Icons.bar_chart), text: widget.t.get('week')),
+            Tab(
+              icon: const Icon(Icons.calendar_month),
+              text: widget.t.get('month'),
+            ),
+            Tab(
+              icon: const Icon(Icons.calendar_view_month),
+              text: widget.t.get('year'),
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_buildWeeklyTab(), _buildMonthlyTab(), _buildYearlyTab()],
       ),
     );
   }
