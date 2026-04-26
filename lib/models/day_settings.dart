@@ -9,6 +9,7 @@ class DaySettings {
   final String themeMode; // 'system', 'light', 'dark'
   final String language; // 'pl', 'en'
   final bool notificationsEnabled; // czy powiadomienia włączone
+  final bool soundsEnabled; // czy efekty dźwiękowe są włączone
   final int
   notificationIntervalMinutes; // interwał w minutach: 15, 30, 60, 90, 120
 
@@ -23,6 +24,7 @@ class DaySettings {
     this.themeMode = 'system',
     this.language = 'pl',
     this.notificationsEnabled = true,
+    this.soundsEnabled = true,
     this.notificationIntervalMinutes = 60,
   });
 
@@ -37,6 +39,7 @@ class DaySettings {
     String? themeMode,
     String? language,
     bool? notificationsEnabled,
+    bool? soundsEnabled,
     int? notificationIntervalMinutes,
   }) {
     return DaySettings(
@@ -50,6 +53,7 @@ class DaySettings {
       themeMode: themeMode ?? this.themeMode,
       language: language ?? this.language,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      soundsEnabled: soundsEnabled ?? this.soundsEnabled,
       notificationIntervalMinutes:
           notificationIntervalMinutes ?? this.notificationIntervalMinutes,
     );
@@ -67,6 +71,7 @@ class DaySettings {
       'themeMode': themeMode,
       'language': language,
       'notificationsEnabled': notificationsEnabled ? 1 : 0,
+      'soundsEnabled': soundsEnabled ? 1 : 0,
       'notificationIntervalMinutes': notificationIntervalMinutes,
     };
   }
@@ -83,6 +88,7 @@ class DaySettings {
       themeMode: map['themeMode'] as String? ?? 'system',
       language: map['language'] as String? ?? 'pl',
       notificationsEnabled: (map['notificationsEnabled'] as int? ?? 1) == 1,
+      soundsEnabled: (map['soundsEnabled'] as int? ?? 1) == 1,
       notificationIntervalMinutes:
           map['notificationIntervalMinutes'] as int? ?? 60,
     );
@@ -117,6 +123,7 @@ class DaySettings {
       themeMode: 'system',
       language: 'pl',
       notificationsEnabled: true,
+      soundsEnabled: true,
       notificationIntervalMinutes: 60,
     );
   }

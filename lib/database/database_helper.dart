@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -58,6 +58,7 @@ class DatabaseHelper {
         themeMode TEXT NOT NULL DEFAULT 'system',
         language TEXT NOT NULL DEFAULT 'pl',
         notificationsEnabled INTEGER NOT NULL DEFAULT 1,
+        soundsEnabled INTEGER NOT NULL DEFAULT 1,
         notificationIntervalMinutes INTEGER NOT NULL DEFAULT 60
       )
     ''');
@@ -197,6 +198,12 @@ class DatabaseHelper {
           whereArgs: [allButtons[i]['id']],
         );
       }
+    }
+
+    if (oldVersion < 10) {
+      await db.execute('''
+        ALTER TABLE day_settings ADD COLUMN soundsEnabled INTEGER NOT NULL DEFAULT 1
+      ''');
     }
   }
 

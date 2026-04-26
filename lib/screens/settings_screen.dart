@@ -630,9 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.vertical(
                       top: const Radius.circular(16),
-                      bottom: Radius.circular(
-                        _settings!.notificationsEnabled ? 0 : 16,
-                      ),
+                      bottom: const Radius.circular(0),
                     ),
                   ),
                   secondary: const Icon(Icons.notifications_rounded),
@@ -647,6 +645,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       updatedSettings,
                       rescheduleReminders: true,
                     );
+                  },
+                ),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                SwitchListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.zero,
+                      bottom: Radius.circular(
+                        _settings!.notificationsEnabled ? 0 : 16,
+                      ),
+                    ),
+                  ),
+                  secondary: const Icon(Icons.volume_up_rounded),
+                  title: Text(widget.t.get('soundsEnabled')),
+                  subtitle: Text(widget.t.get('soundsEnabledSubtitle')),
+                  value: _settings!.soundsEnabled,
+                  onChanged: (value) async {
+                    final updatedSettings = _settings!.copyWith(
+                      soundsEnabled: value,
+                    );
+                    await _persistSettings(updatedSettings);
                   },
                 ),
                 if (_settings!.notificationsEnabled) ...[

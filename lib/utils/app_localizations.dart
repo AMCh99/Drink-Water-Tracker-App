@@ -171,6 +171,11 @@ class AppLocalizations {
       'pl': 'Regularne przypomnienia o piciu wody',
       'en': 'Regular reminders to drink water',
     },
+    'soundsEnabled': {'pl': 'Dźwięki aplikacji', 'en': 'App sounds'},
+    'soundsEnabledSubtitle': {
+      'pl': 'Krótki dźwięk po dodaniu wody',
+      'en': 'Short sound after adding water',
+    },
     'notificationInterval': {'pl': 'Częstotliwość', 'en': 'Frequency'},
     'chooseInterval': {'pl': 'Wybierz częstotliwość', 'en': 'Choose frequency'},
     'notificationWindow': {

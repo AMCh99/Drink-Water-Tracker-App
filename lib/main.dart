@@ -116,13 +116,44 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+              seedColor: const Color(0xFF1A86FF),
           brightness: Brightness.light,
+              secondary: const Color(0xFF1FA3A3),
+              tertiary: const Color(0xFF6E57E0),
+              surface: const Color(0xFFF7FAFF),
+              surfaceTint: const Color(0xFF1A86FF),
+            ).copyWith(
+              primary: const Color(0xFF1A86FF),
+              secondary: const Color(0xFF1FA3A3),
+              tertiary: const Color(0xFF6E57E0),
+              surface: const Color(0xFFF7FAFF),
+              surfaceContainerLowest: const Color(0xFFFFFFFF),
+              surfaceContainerLow: const Color(0xFFF2F7FF),
+              surfaceContainer: const Color(0xFFEAF2FF),
+              surfaceContainerHigh: const Color(0xFFE2ECFF),
+              surfaceContainerHighest: const Color(0xFFDCE7FF),
+              outline: const Color(0xFFB8C8E6),
         ),
+        scaffoldBackgroundColor: const Color(0xFFF4F8FF),
         appBarTheme: const AppBarTheme(
           elevation: 0,
           scrolledUnderElevation: 0,
+          backgroundColor: Color(0xFFF7FAFF),
+          foregroundColor: Color(0xFF12324E),
+          iconTheme: IconThemeData(color: Color(0xFF1A86FF)),
           systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFFFFFFFF),
+          elevation: 0,
+          surfaceTintColor: Color(0x331A86FF),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF1A86FF)),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF1A86FF),
+            foregroundColor: Colors.white,
+          ),
         ),
         useMaterial3: true,
       ),
@@ -215,6 +246,17 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   // Audio — lazy init przy pierwszym użyciu
   AudioPlayer? _audioPlayer;
 
+  Future<AudioPlayer> _ensureAudioPlayer() async {
+    if (_audioPlayer != null) return _audioPlayer!;
+
+    final player = AudioPlayer();
+    await player.setAudioContext(
+      AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers).build(),
+    );
+    _audioPlayer = player;
+    return player;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -305,11 +347,13 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
     // Efekty dźwiękowe i haptyczne przy dodawaniu wody
     if (playEffects) {
       HapticFeedback.mediumImpact();
-      try {
-        _audioPlayer ??= AudioPlayer();
-        await _audioPlayer!.play(AssetSource('sounds/water_drop.wav'));
-      } catch (_) {
-        // Ignoruj błędy audio
+      if (settings.soundsEnabled) {
+        try {
+          final player = await _ensureAudioPlayer();
+          await player.play(AssetSource('sounds/water_drop.wav'));
+        } catch (_) {
+          // Ignoruj błędy audio
+        }
       }
     }
 
