@@ -57,8 +57,15 @@ class NotificationService {
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-      final granted = await android?.requestNotificationsPermission();
-      return granted ?? false;
+      // Android 13+ — uprawnienie do wyświetlania powiadomień
+      final notifGranted = await android?.requestNotificationsPermission();
+      if (notifGranted != true) return false;
+
+      // Android 12+ — uprawnienie do dokładnych alarmów
+      final exactGranted = await android?.requestExactAlarmsPermission();
+      // Jeśli brak zgody na dokładne alarmy, wróć false (użyjemy inexact)
+      _canUseExactAlarms = exactGranted ?? false;
+      return true;
     } else if (Platform.isIOS) {
       final ios = _notifications
           .resolvePlatformSpecificImplementation<
@@ -74,6 +81,8 @@ class NotificationService {
     return true;
   }
 
+  bool _canUseExactAlarms = true;
+
   /// Planuje powiadomienia-przypomnienia na bieżący i następny dzień
   /// Okno: dayStart + 1h do dayEnd - 2h
   /// Interwał: notificationIntervalMinutes
@@ -82,10 +91,6 @@ class NotificationService {
     await cancelAll();
 
     if (!settings.notificationsEnabled) return;
-
-    // Poproś o uprawnienia
-    final hasPermission = await requestPermissions();
-    if (!hasPermission) return;
 
     final now = tz.TZDateTime.now(tz.local);
     final intervalMinutes = settings.notificationIntervalMinutes;
@@ -174,7 +179,9 @@ class NotificationService {
       body,
       scheduledDate,
       details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: _canUseExactAlarms
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: null,

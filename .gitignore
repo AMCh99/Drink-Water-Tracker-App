@@ -120,3 +120,5 @@ app.*.symbols
 
 app-release.apk
 app-release.aab
+
+.Ds_Store
