@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Drink water</string>
     <string name="widget_description">Pokazuje dzienną ilość wypitej wody</string>
+    <string name="widget_small_description">Kompaktowy wskaźnik nawodnienia</string>
 </resources>
