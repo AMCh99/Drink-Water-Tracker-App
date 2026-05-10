@@ -176,11 +176,20 @@ class AppLocalizations {
       'pl': 'Krótki dźwięk po dodaniu wody',
       'en': 'Short sound after adding water',
     },
-    'notificationInterval': {'pl': 'Częstotliwość', 'en': 'Frequency'},
-    'chooseInterval': {'pl': 'Wybierz częstotliwość', 'en': 'Choose frequency'},
-    'notificationWindow': {
-      'pl': 'Okno powiadomień',
-      'en': 'Notification window',
+    'notificationTimes': {
+      'pl': 'Godziny powiadomień',
+      'en': 'Notification times',
+    },
+    'notificationTimesSubtitle': {
+      'pl':
+          'Wybierz konkretne godziny, o których chcesz dostawać przypomnienia',
+      'en': 'Choose the exact times when you want reminders',
+    },
+    'notificationTimesEmpty': {
+      'pl': 'Dodaj pierwszą godzinę przypomnienia',
+      'en': 'Add your first reminder time',
+    },
+    'addNotificationTime': {'pl': 'Dodaj godzinę', 'en': 'Add time',
     },
   };
 

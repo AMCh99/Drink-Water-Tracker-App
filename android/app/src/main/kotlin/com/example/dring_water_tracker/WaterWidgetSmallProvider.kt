@@ -8,6 +8,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetPlugin
+import kotlin.math.max
 import kotlin.math.min
 
 class WaterWidgetSmallProvider : AppWidgetProvider() {
@@ -24,15 +25,14 @@ class WaterWidgetSmallProvider : AppWidgetProvider() {
             val themeMode = widgetData.getString("theme_mode", "system")
 
             val safeGoal = if (waterGoal <= 0) 1 else waterGoal
-            val progressPercent = min(((waterTotal.toFloat() / safeGoal.toFloat()) * 100f).toInt(), 999)
-            val ringLevel = min(progressPercent, 100) * 100
+            val rawProgressPercent = ((waterTotal.toFloat() / safeGoal.toFloat()) * 100f).toInt()
+            val progressPercent = min(max(rawProgressPercent, 0), 100)
             val isDark = themeMode == "dark" || themeMode == "oled"
 
             val backgroundRes = if (isDark) R.drawable.widget_background_dark else R.drawable.widget_background_light
-            val progressColor = if (isDark) Color.parseColor("#5AA7FF") else Color.parseColor("#1A86FF")
-            val trackColor = if (isDark) Color.parseColor("#2D3B4A") else Color.parseColor("#D7E5F5")
+            val iconColor = if (isDark) Color.parseColor("#5AA7FF") else Color.parseColor("#1A86FF")
             val primaryTextColor = if (isDark) Color.parseColor("#EAF3FF") else Color.parseColor("#12324E")
-            val secondaryTextColor = if (isDark) Color.parseColor("#9FB1C5") else Color.parseColor("#4E6A86")
+            val secondaryTextColor = if (isDark) Color.parseColor("#B6C7DA") else Color.parseColor("#4E6A86")
 
             val views = RemoteViews(context.packageName, R.layout.water_widget_small).apply {
                 val formattedAmount = if (waterUnit == "oz") {
@@ -45,9 +45,8 @@ class WaterWidgetSmallProvider : AppWidgetProvider() {
                 setTextViewText(R.id.water_amount_small, formattedAmount)
 
                 setInt(R.id.widget_small_container, "setBackgroundResource", backgroundRes)
-                setInt(R.id.ring_progress_small, "setImageLevel", ringLevel)
-                setInt(R.id.ring_progress_small, "setColorFilter", progressColor)
-                setInt(R.id.ring_track_small, "setColorFilter", trackColor)
+                setInt(R.id.water_icon_small, "setColorFilter", iconColor)
+                setProgressBar(R.id.water_progress_small, 100, progressPercent, false)
                 setTextColor(R.id.progress_percent_small, primaryTextColor)
                 setTextColor(R.id.water_amount_small, secondaryTextColor)
 

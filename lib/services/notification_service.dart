@@ -83,58 +83,27 @@ class NotificationService {
 
   bool _canUseExactAlarms = true;
 
-  /// Planuje powiadomienia-przypomnienia na bieżący i następny dzień
-  /// Okno: dayStart + 1h do dayEnd - 2h
-  /// Interwał: notificationIntervalMinutes
+  /// Planuje powiadomienia według konkretnych godzin ustawionych przez użytkownika.
   Future<void> scheduleReminders(DaySettings settings) async {
     // Anuluj wszystkie istniejące
     await cancelAll();
 
-    if (!settings.notificationsEnabled) return;
+    if (settings.notificationTimes.isEmpty) return;
 
-    final now = tz.TZDateTime.now(tz.local);
-    final intervalMinutes = settings.notificationIntervalMinutes;
+    final hasPermission = await requestPermissions();
+    if (!hasPermission) return;
 
-    // Oblicz okno powiadomień
-    final windowStartMinutes =
-        settings.dayStartHour * 60 + settings.dayStartMinute + 60; // +1h
-    final windowEndMinutes =
-        settings.dayEndHour * 60 + settings.dayEndMinute - 120; // -2h
+    for (int index = 0; index < settings.notificationTimes.length; index++) {
+      final time = settings.notificationTimes[index];
+      final scheduledDate = _nextScheduledDate(time);
+      if (scheduledDate == null) continue;
 
-    if (windowStartMinutes >= windowEndMinutes) return; // brak okna
-
-    // Zaplanuj na dzisiaj i jutro
-    for (int dayOffset = 0; dayOffset <= 1; dayOffset++) {
-      final baseDate = now.add(Duration(days: dayOffset));
-      int notificationId = dayOffset * 100; // 0-99 dziś, 100-199 jutro
-
-      int currentMinutes = windowStartMinutes;
-      while (currentMinutes <= windowEndMinutes) {
-        final hour = currentMinutes ~/ 60;
-        final minute = currentMinutes % 60;
-
-        final scheduledDate = tz.TZDateTime(
-          tz.local,
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          hour,
-          minute,
-        );
-
-        // Planuj tylko przyszłe powiadomienia
-        if (scheduledDate.isAfter(now)) {
-          await _scheduleNotification(
-            id: notificationId,
-            scheduledDate: scheduledDate,
-            title: _getTitle(settings.language),
-            body: _getBody(settings.language),
-          );
-        }
-
-        notificationId++;
-        currentMinutes += intervalMinutes;
-      }
+      await _scheduleNotification(
+        id: 1000 + index,
+        scheduledDate: scheduledDate,
+        title: _getTitle(settings.language),
+        body: _getBody(settings.language),
+      );
     }
   }
 
@@ -184,8 +153,34 @@ class NotificationService {
           : AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: null,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
+  }
+
+  tz.TZDateTime? _nextScheduledDate(String time) {
+    final parts = time.split(':');
+    if (parts.length != 2) return null;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    return scheduledDate;
   }
 
   String _getTitle(String language) {
@@ -198,24 +193,4 @@ class NotificationService {
         : "You haven't drunk in a while — have some water!";
   }
 
-  /// Lista dostępnych interwałów (w minutach)
-  static const List<int> availableIntervals = [15, 30, 60, 90, 120];
-
-  /// Opis interwału (do wyświetlenia w UI)
-  static String intervalLabel(int minutes, String language) {
-    switch (minutes) {
-      case 15:
-        return language == 'pl' ? 'Co 15 minut' : 'Every 15 minutes';
-      case 30:
-        return language == 'pl' ? 'Co 30 minut' : 'Every 30 minutes';
-      case 60:
-        return language == 'pl' ? 'Co 1 godzinę' : 'Every 1 hour';
-      case 90:
-        return language == 'pl' ? 'Co 1,5 godziny' : 'Every 1.5 hours';
-      case 120:
-        return language == 'pl' ? 'Co 2 godziny' : 'Every 2 hours';
-      default:
-        return language == 'pl' ? 'Co $minutes min' : 'Every $minutes min';
-    }
-  }
 }

@@ -376,44 +376,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _showIntervalDialog() async {
+  String _formatTimeString(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return value;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return value;
+
+    final timeOfDay = TimeOfDay(hour: hour, minute: minute);
+    return timeOfDay.format(context);
+  }
+
+  Future<void> _addNotificationTime() async {
     if (_settings == null) return;
 
-    return showDialog(
+    final picked = await showTimePicker(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(widget.t.get('chooseInterval')),
-          content: RadioGroup<int>(
-            groupValue: _settings!.notificationIntervalMinutes,
-            onChanged: (value) async {
-              final updatedSettings = _settings!.copyWith(
-                notificationIntervalMinutes: value,
-              );
-              await _persistSettings(
-                updatedSettings,
-                rescheduleReminders: true,
-              );
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: NotificationService.availableIntervals.map((minutes) {
-                return RadioListTile<int>(
-                  title: Text(
-                    NotificationService.intervalLabel(
-                      minutes,
-                      _settings!.language,
-                    ),
-                  ),
-                  value: minutes,
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
     );
+
+    if (picked == null) return;
+
+    final timeValue =
+        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    final currentTimes = [..._settings!.notificationTimes];
+    if (currentTimes.contains(timeValue)) return;
+    currentTimes.add(timeValue);
+    currentTimes.sort();
+
+    final updatedSettings = _settings!.copyWith(
+      notificationTimes: currentTimes,
+    );
+    await _persistSettings(updatedSettings, rescheduleReminders: true);
+  }
+
+  Future<void> _removeNotificationTime(String timeValue) async {
+    if (_settings == null) return;
+
+    final updatedTimes = [..._settings!.notificationTimes]..remove(timeValue);
+    final updatedSettings = _settings!.copyWith(
+      notificationTimes: updatedTimes,
+    );
+    await _persistSettings(updatedSettings, rescheduleReminders: true);
   }
 
   @override
@@ -627,41 +632,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 SwitchListTile(
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.vertical(
-                      top: const Radius.circular(16),
-                      bottom: const Radius.circular(0),
-                    ),
-                  ),
-                  secondary: const Icon(Icons.notifications_rounded),
-                  title: Text(widget.t.get('notificationsEnabled')),
-                  subtitle: Text(widget.t.get('notificationsEnabledSubtitle')),
-                  value: _settings!.notificationsEnabled,
-                  onChanged: (value) async {
-                    final updatedSettings = _settings!.copyWith(
-                      notificationsEnabled: value,
-                    );
-                    await _persistSettings(
-                      updatedSettings,
-                      rescheduleReminders: true,
-                    );
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  indent: 16,
-                  endIndent: 16,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.08),
-                ),
-                SwitchListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.zero,
-                      bottom: Radius.circular(
-                        _settings!.notificationsEnabled ? 0 : 16,
-                      ),
+                      top: Radius.circular(16),
                     ),
                   ),
                   secondary: const Icon(Icons.volume_up_rounded),
@@ -675,36 +648,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await _persistSettings(updatedSettings);
                   },
                 ),
-                if (_settings!.notificationsEnabled) ...[
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.08),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notifications_active_rounded),
+                  title: Text(
+                    '${widget.t.get('notificationTimes')} (${_settings!.notificationTimes.length})',
                   ),
-                  ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        bottom: Radius.circular(16),
-                      ),
-                    ),
-                    leading: const Icon(Icons.timer_rounded),
-                    title: Text(widget.t.get('notificationInterval')),
-                    subtitle: Text(
-                      NotificationService.intervalLabel(
-                        _settings!.notificationIntervalMinutes,
-                        _settings!.language,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                    ),
-                    onTap: _showIntervalDialog,
+                  subtitle: Text(
+                    _settings!.notificationTimes.isEmpty
+                        ? widget.t.get('notificationTimesEmpty')
+                        : widget.t.get('notificationTimesSubtitle'),
                   ),
-                ],
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    onPressed: _addNotificationTime,
+                    tooltip: widget.t.get('addNotificationTime'),
+                  ),
+                ),
+                if (_settings!.notificationTimes.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _settings!.notificationTimes.map((time) {
+                        return InputChip(
+                          label: Text(_formatTimeString(time)),
+                          deleteIcon: const Icon(Icons.close_rounded),
+                          onDeleted: () => _removeNotificationTime(time),
+                        );
+                      }).toList(),
+                    ),
+                  ),
               ],
             ),
           ),

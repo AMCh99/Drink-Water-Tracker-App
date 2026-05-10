@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class DaySettings {
   final int? id;
   final int dayStartHour; // 0-23
@@ -8,10 +10,8 @@ class DaySettings {
   final String unit; // jednostka: 'ml' lub 'oz'
   final String themeMode; // 'system', 'light', 'dark'
   final String language; // 'pl', 'en'
-  final bool notificationsEnabled; // czy powiadomienia włączone
+  final List<String> notificationTimes; // lista godzin HH:mm
   final bool soundsEnabled; // czy efekty dźwiękowe są włączone
-  final int
-  notificationIntervalMinutes; // interwał w minutach: 15, 30, 60, 90, 120
 
   DaySettings({
     this.id,
@@ -23,10 +23,19 @@ class DaySettings {
     this.unit = 'ml',
     this.themeMode = 'system',
     this.language = 'pl',
-    this.notificationsEnabled = true,
+    List<String>? notificationTimes,
     this.soundsEnabled = true,
-    this.notificationIntervalMinutes = 60,
-  });
+  }) : notificationTimes = notificationTimes ?? const [];
+
+  static List<String> _normalizeNotificationTimes(List<String> times) {
+    final normalized = times
+        .map((time) => time.trim())
+        .where((time) => RegExp(r'^\d{2}:\d{2}$').hasMatch(time))
+        .toSet()
+        .toList();
+    normalized.sort();
+    return normalized;
+  }
 
   DaySettings copyWith({
     int? id,
@@ -38,9 +47,8 @@ class DaySettings {
     String? unit,
     String? themeMode,
     String? language,
-    bool? notificationsEnabled,
+    List<String>? notificationTimes,
     bool? soundsEnabled,
-    int? notificationIntervalMinutes,
   }) {
     return DaySettings(
       id: id ?? this.id,
@@ -52,10 +60,8 @@ class DaySettings {
       unit: unit ?? this.unit,
       themeMode: themeMode ?? this.themeMode,
       language: language ?? this.language,
-      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      notificationTimes: notificationTimes ?? this.notificationTimes,
       soundsEnabled: soundsEnabled ?? this.soundsEnabled,
-      notificationIntervalMinutes:
-          notificationIntervalMinutes ?? this.notificationIntervalMinutes,
     );
   }
 
@@ -70,13 +76,30 @@ class DaySettings {
       'unit': unit,
       'themeMode': themeMode,
       'language': language,
-      'notificationsEnabled': notificationsEnabled ? 1 : 0,
+      'notificationTimes': jsonEncode(
+        _normalizeNotificationTimes(notificationTimes),
+      ),
       'soundsEnabled': soundsEnabled ? 1 : 0,
-      'notificationIntervalMinutes': notificationIntervalMinutes,
     };
   }
 
   factory DaySettings.fromMap(Map<String, dynamic> map) {
+    final rawNotificationTimes = map['notificationTimes'];
+    List<String> notificationTimes = [];
+    if (rawNotificationTimes is String && rawNotificationTimes.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawNotificationTimes);
+        if (decoded is List) {
+          notificationTimes = decoded
+              .whereType<String>()
+              .map((time) => time.trim())
+              .toList();
+        }
+      } catch (_) {
+        notificationTimes = [];
+      }
+    }
+
     return DaySettings(
       id: map['id'] as int?,
       dayStartHour: map['dayStartHour'] as int,
@@ -87,10 +110,8 @@ class DaySettings {
       unit: map['unit'] as String? ?? 'ml',
       themeMode: map['themeMode'] as String? ?? 'system',
       language: map['language'] as String? ?? 'pl',
-      notificationsEnabled: (map['notificationsEnabled'] as int? ?? 1) == 1,
+      notificationTimes: _normalizeNotificationTimes(notificationTimes),
       soundsEnabled: (map['soundsEnabled'] as int? ?? 1) == 1,
-      notificationIntervalMinutes:
-          map['notificationIntervalMinutes'] as int? ?? 60,
     );
   }
 
@@ -122,9 +143,8 @@ class DaySettings {
       unit: 'ml',
       themeMode: 'system',
       language: 'pl',
-      notificationsEnabled: true,
+      notificationTimes: ['09:00', '13:00', '17:00'],
       soundsEnabled: true,
-      notificationIntervalMinutes: 60,
     );
   }
 }

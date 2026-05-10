@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -31,7 +32,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -57,8 +58,9 @@ class DatabaseHelper {
         unit TEXT NOT NULL DEFAULT 'ml',
         themeMode TEXT NOT NULL DEFAULT 'system',
         language TEXT NOT NULL DEFAULT 'pl',
-        notificationsEnabled INTEGER NOT NULL DEFAULT 1,
+        notificationTimes TEXT NOT NULL DEFAULT '[]',
         soundsEnabled INTEGER NOT NULL DEFAULT 1,
+        notificationsEnabled INTEGER NOT NULL DEFAULT 1,
         notificationIntervalMinutes INTEGER NOT NULL DEFAULT 60
       )
     ''');
@@ -205,14 +207,60 @@ class DatabaseHelper {
         ALTER TABLE day_settings ADD COLUMN soundsEnabled INTEGER NOT NULL DEFAULT 1
       ''');
     }
+
+    if (oldVersion < 11) {
+      await db.execute('''
+        ALTER TABLE day_settings ADD COLUMN notificationTimes TEXT NOT NULL DEFAULT '[]'
+      ''');
+
+      final rows = await db.query('day_settings', limit: 1);
+      if (rows.isNotEmpty) {
+        final row = rows.first;
+        final notificationsEnabled =
+            (row['notificationsEnabled'] as int? ?? 1) == 1;
+        if (notificationsEnabled) {
+          final dayStartHour = row['dayStartHour'] as int;
+          final dayStartMinute = row['dayStartMinute'] as int;
+          final dayEndHour = row['dayEndHour'] as int;
+          final dayEndMinute = row['dayEndMinute'] as int;
+          final intervalMinutes =
+              row['notificationIntervalMinutes'] as int? ?? 60;
+
+          final startMinutes = dayStartHour * 60 + dayStartMinute + 60;
+          final endMinutes = dayEndHour * 60 + dayEndMinute - 120;
+          final legacyTimes = <String>[];
+
+          if (startMinutes < endMinutes) {
+            int currentMinutes = startMinutes;
+            while (currentMinutes <= endMinutes) {
+              final hour = currentMinutes ~/ 60;
+              final minute = currentMinutes % 60;
+              legacyTimes.add(
+                '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+              );
+              currentMinutes += intervalMinutes;
+            }
+          }
+
+          await db.update(
+            'day_settings',
+            {'notificationTimes': jsonEncode(legacyTimes)},
+            where: 'id = ?',
+            whereArgs: [row['id']],
+          );
+        }
+      }
+    }
   }
 
   // CRUD dla water_entries
   Future<int> insertWaterEntry(WaterEntry entry) async {
     final db = await database;
-    print('DEBUG: Dodaję wpis: ${entry.milliliters}ml o ${entry.timestamp}');
+    debugPrint(
+      'DEBUG: Dodaję wpis: ${entry.milliliters}ml o ${entry.timestamp}',
+    );
     final id = await db.insert('water_entries', entry.toMap());
-    print('DEBUG: Wpis dodany z ID: $id');
+    debugPrint('DEBUG: Wpis dodany z ID: $id');
     return id;
   }
 
@@ -285,7 +333,7 @@ class DatabaseHelper {
       endOfDay = nextReset;
     }
 
-    print(
+    debugPrint(
       'DEBUG: Szukam wpisów od $startOfDay do $endOfDay (reset o ${resetTime.hour}:${resetTime.minute})',
     );
 
@@ -296,7 +344,7 @@ class DatabaseHelper {
       orderBy: 'timestamp DESC',
     );
 
-    print('DEBUG: Znaleziono ${results.length} wpisów');
+    debugPrint('DEBUG: Znaleziono ${results.length} wpisów');
     return results.map((map) => WaterEntry.fromMap(map)).toList();
   }
 
@@ -308,7 +356,7 @@ class DatabaseHelper {
     // Normalizujemy godziny (np. 22+3=25 -> 1:00)
     resetHour = resetHour % 24;
 
-    print(
+    debugPrint(
       'DEBUG: Reset o godzinie $resetHour:${resetMinute.toString().padLeft(2, '0')} (3h po końcu dnia ${settings.dayEndHour}:${settings.dayEndMinute.toString().padLeft(2, '0')})',
     );
 
