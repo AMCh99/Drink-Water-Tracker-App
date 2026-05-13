@@ -27,35 +27,71 @@ This is the first version of the app. I plan to continue developing it and addin
 
 ## Screenshots
 
+<div align="center">
+
 ### Main
 
-<p>
-	<img src="assets/screenshots/main%20light.png" alt="Main - Light" width="250" />
-	<img src="assets/screenshots/main%20dark.png" alt="Main - Dark" width="250" />
-	<img src="assets/screenshots/main%20dark%20oled.png" alt="Main - Dark OLED" width="250" />
-</p>
+<table cellpadding="8">
+	<tr>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/main%20light.png" alt="Light Theme" width="230" /><br />
+			<sub>Light Theme</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/main%20dark.png" alt="Dark Theme" width="230" /><br />
+			<sub>Dark Theme</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/main%20dark%20oled.png" alt="Dark OLED Theme" width="230" /><br />
+			<sub>Dark OLED Theme</sub>
+		</td>
+	</tr>
+</table>
 
-### Add Water
+<br />
 
-<p>
-	<img src="assets/screenshots/add%20water.png" alt="Add Water" width="280" />
-</p>
+### Settings and Add Water
 
-### Settings
+<table cellpadding="8">
+	<tr>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/add%20water.png" alt="Add Water" width="230" /><br />
+			<sub>Add Water</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/settings.png" alt="Settings" width="230" /><br />
+			<sub>Settings</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/settings%202.png" alt="Settings 2" width="230" /><br />
+			<sub>Settings</sub>
+		</td>
+	</tr>
+</table>
 
-<p>
-	<img src="assets/screenshots/settings.png" alt="Settings" width="250" />
-	<img src="assets/screenshots/settings%202.png" alt="Settings 2" width="250" />
-</p>
+<br />
 
 ### Statistics
 
-<p>
-	<img src="assets/screenshots/statistics%20week%201.png" alt="Statistics - Week 1" width="250" />
-	<img src="assets/screenshots/statistics%20week%202.png" alt="Statistics - Week 2" width="250" />
-</p>
+<table cellpadding="8">
+	<tr>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/statistics%20week%201.png" alt="Statistics - Week 1" width="170" /><br />
+			<sub>Statistics Week</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/statistics%20week%202.png" alt="Statistics - Week 2" width="170" /><br />
+			<sub>Statistics Week</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/statistics%20month.png" alt="Statistics - Month" width="170" /><br />
+			<sub>Statistics Month</sub>
+		</td>
+		<td align="center" valign="top">
+			<img src="assets/screenshots/statistics%20year.png" alt="Statistics - Year" width="170" /><br />
+			<sub>Statistics Year</sub>
+		</td>
+	</tr>
+</table>
 
-<p>
-	<img src="assets/screenshots/statistics%20month.png" alt="Statistics - Month" width="250" />
-	<img src="assets/screenshots/statistics%20year.png" alt="Statistics - Year" width="250" />
-</p>
+</div>
