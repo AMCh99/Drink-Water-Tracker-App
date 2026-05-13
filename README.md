@@ -1,5 +1,9 @@
 # Drink Water Tracker
 
+<p align="center">
+	<img src="assets/icon/app_icon_android.png" alt="BeHydrated app icon" width="130" />
+</p>
+
 A simple mobile app for tracking daily water intake, built with Flutter.
 
 ## About
@@ -25,28 +29,33 @@ This is the first version of the app. I plan to continue developing it and addin
 
 ### Main
 
-![Main - Light](assets/screenshots/main%20light.png)
-
-![Main - Dark](assets/screenshots/main%20dark.png)
-
-![Main - Dark OLED](assets/screenshots/main%20dark%20oled.png)
+<p>
+	<img src="assets/screenshots/main%20light.png" alt="Main - Light" width="250" />
+	<img src="assets/screenshots/main%20dark.png" alt="Main - Dark" width="250" />
+	<img src="assets/screenshots/main%20dark%20oled.png" alt="Main - Dark OLED" width="250" />
+</p>
 
 ### Add Water
 
-![Add Water](assets/screenshots/add%20water.png)
+<p>
+	<img src="assets/screenshots/add%20water.png" alt="Add Water" width="280" />
+</p>
 
 ### Settings
 
-![Settings](assets/screenshots/settings.png)
-
-![Settings 2](assets/screenshots/settings%202.png)
+<p>
+	<img src="assets/screenshots/settings.png" alt="Settings" width="250" />
+	<img src="assets/screenshots/settings%202.png" alt="Settings 2" width="250" />
+</p>
 
 ### Statistics
 
-![Statistics - Week 1](assets/screenshots/statistics%20week%201.png)
+<p>
+	<img src="assets/screenshots/statistics%20week%201.png" alt="Statistics - Week 1" width="250" />
+	<img src="assets/screenshots/statistics%20week%202.png" alt="Statistics - Week 2" width="250" />
+</p>
 
-![Statistics - Week 2](assets/screenshots/statistics%20week%202.png)
-
-![Statistics - Month](assets/screenshots/statistics%20month.png)
-
-![Statistics - Year](assets/screenshots/statistics%20year.png)
+<p>
+	<img src="assets/screenshots/statistics%20month.png" alt="Statistics - Month" width="250" />
+	<img src="assets/screenshots/statistics%20year.png" alt="Statistics - Year" width="250" />
+</p>
