@@ -20,3 +20,33 @@ This is the first version of the app. I plan to continue developing it and addin
 
 - Flutter
 - Dart
+
+## Screenshots
+
+### Main
+
+![Main - Light](assets/screenshots/main%20light.png)
+
+![Main - Dark](assets/screenshots/main%20dark.png)
+
+![Main - Dark OLED](assets/screenshots/main%20dark%20oled.png)
+
+### Add Water
+
+![Add Water](assets/screenshots/add%20water.png)
+
+### Settings
+
+![Settings](assets/screenshots/settings.png)
+
+![Settings 2](assets/screenshots/settings%202.png)
+
+### Statistics
+
+![Statistics - Week 1](assets/screenshots/statistics%20week%201.png)
+
+![Statistics - Week 2](assets/screenshots/statistics%20week%202.png)
+
+![Statistics - Month](assets/screenshots/statistics%20month.png)
+
+![Statistics - Year](assets/screenshots/statistics%20year.png)
