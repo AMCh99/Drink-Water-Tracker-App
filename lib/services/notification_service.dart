@@ -57,14 +57,36 @@ class NotificationService {
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-      // Android 13+ — uprawnienie do wyświetlania powiadomień
-      final notifGranted = await android?.requestNotificationsPermission();
-      if (notifGranted != true) return false;
+      if (android == null) return true;
 
-      // Android 12+ — uprawnienie do dokładnych alarmów
-      final exactGranted = await android?.requestExactAlarmsPermission();
-      // Jeśli brak zgody na dokładne alarmy, wróć false (użyjemy inexact)
-      _canUseExactAlarms = exactGranted ?? false;
+      // Domyślnie exact; jeśli exact będzie niedostępny, spadamy do inexact.
+      _canUseExactAlarms = true;
+
+      try {
+        final enabledNow = await android.areNotificationsEnabled();
+        if (enabledNow == false) {
+          final notifGranted = await android.requestNotificationsPermission();
+          if (notifGranted == false) return false;
+
+          // Na części urządzeń/wersji Androida wynik może być null.
+          if (notifGranted == null) {
+            final enabledAfterRequest = await android.areNotificationsEnabled();
+            if (enabledAfterRequest == false) return false;
+          }
+        }
+      } catch (_) {
+        // Nie blokuj dalszego działania na wyjątkach API producenta.
+      }
+
+      try {
+        final exactGranted = await android.requestExactAlarmsPermission();
+        if (exactGranted != null) {
+          _canUseExactAlarms = exactGranted;
+        }
+      } catch (_) {
+        _canUseExactAlarms = false;
+      }
+
       return true;
     } else if (Platform.isIOS) {
       final ios = _notifications
@@ -93,17 +115,41 @@ class NotificationService {
     final hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
-    for (int index = 0; index < settings.notificationTimes.length; index++) {
-      final time = settings.notificationTimes[index];
-      final scheduledDate = _nextScheduledDate(time);
-      if (scheduledDate == null) continue;
+    final now = tz.TZDateTime.now(tz.local);
+    final times = [...settings.notificationTimes]..sort();
 
-      await _scheduleNotification(
-        id: 1000 + index,
-        scheduledDate: scheduledDate,
-        title: _getTitle(settings.language),
-        body: _getBody(settings.language),
-      );
+    // Planuj na najbliższe 7 dni. Przy każdym uruchomieniu/wznowieniu odświeżamy harmonogram.
+    for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+      final baseDate = now.add(Duration(days: dayOffset));
+
+      for (int timeIndex = 0; timeIndex < times.length; timeIndex++) {
+        final parts = times[timeIndex].split(':');
+        if (parts.length != 2) continue;
+
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null) continue;
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) continue;
+
+        final scheduledDate = tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          hour,
+          minute,
+        );
+
+        if (!scheduledDate.isAfter(now)) continue;
+
+        await _scheduleNotification(
+          id: 1000 + dayOffset * 1000 + timeIndex,
+          scheduledDate: scheduledDate,
+          title: _getTitle(settings.language),
+          body: _getBody(settings.language),
+          matchDateTimeComponents: null,
+        );
+      }
     }
   }
 
@@ -118,6 +164,7 @@ class NotificationService {
     required tz.TZDateTime scheduledDate,
     required String title,
     required String body,
+    required DateTimeComponents? matchDateTimeComponents,
   }) async {
     const androidDetails = AndroidNotificationDetails(
       'water_reminder',
@@ -153,34 +200,8 @@ class NotificationService {
           : AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
+      matchDateTimeComponents: matchDateTimeComponents,
     );
-  }
-
-  tz.TZDateTime? _nextScheduledDate(String time) {
-    final parts = time.split(':');
-    if (parts.length != 2) return null;
-
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) return null;
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    if (!scheduledDate.isAfter(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    return scheduledDate;
   }
 
   String _getTitle(String language) {
@@ -192,5 +213,4 @@ class NotificationService {
         ? 'Dawno nie piłeś — napij się wody!'
         : "You haven't drunk in a while — have some water!";
   }
-
 }

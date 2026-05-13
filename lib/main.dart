@@ -282,6 +282,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   Future<void> _initNotifications() async {
     try {
       await NotificationService.instance.init();
+      await NotificationService.instance.requestPermissions();
       final settings = await _dbHelper.getDaySettings();
       await NotificationService.instance.scheduleReminders(settings);
     } catch (_) {
@@ -302,7 +303,7 @@ class _WaterTrackerHomeState extends State<WaterTrackerHome>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // Odśwież dane gdy aplikacja wraca na pierwszy plan
-      _loadData();
+      _loadData(rescheduleNotifications: true);
     }
   }
 
