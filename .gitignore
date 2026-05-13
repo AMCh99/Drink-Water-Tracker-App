@@ -120,5 +120,13 @@ app.*.symbols
 
 app-release.apk
 app-release.aab
+*.apk
+*.aab
 
+# Local macOS metadata
+.DS_Store
 .Ds_Store
+
+# Temporary local icon variants
+app_icon_android-kopia.png
+app_icon_ios-kopia.png

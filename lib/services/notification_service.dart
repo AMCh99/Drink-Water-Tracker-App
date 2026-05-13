@@ -7,6 +7,9 @@ import '../models/day_settings.dart';
 
 class NotificationService {
   static final NotificationService instance = NotificationService._init();
+  static const int _daysToSchedule = 7;
+  static const int _notificationIdBase = 1000;
+  static const int _notificationIdDayStride = 1000;
   NotificationService._init();
 
   final FlutterLocalNotificationsPlugin _notifications =
@@ -116,38 +119,38 @@ class NotificationService {
     if (!hasPermission) return;
 
     final now = tz.TZDateTime.now(tz.local);
-    final times = [...settings.notificationTimes]..sort();
+    final parsedTimes = settings.notificationTimes
+        .map(_parseTime)
+        .whereType<({int hour, int minute})>()
+        .toList(growable: false);
+    if (parsedTimes.isEmpty) return;
 
-    // Planuj na najbliższe 7 dni. Przy każdym uruchomieniu/wznowieniu odświeżamy harmonogram.
-    for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+    // Planuj na najbliższe dni. Przy każdym uruchomieniu/wznowieniu odświeżamy harmonogram.
+    for (int dayOffset = 0; dayOffset < _daysToSchedule; dayOffset++) {
       final baseDate = now.add(Duration(days: dayOffset));
 
-      for (int timeIndex = 0; timeIndex < times.length; timeIndex++) {
-        final parts = times[timeIndex].split(':');
-        if (parts.length != 2) continue;
-
-        final hour = int.tryParse(parts[0]);
-        final minute = int.tryParse(parts[1]);
-        if (hour == null || minute == null) continue;
-        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) continue;
+      for (int timeIndex = 0; timeIndex < parsedTimes.length; timeIndex++) {
+        final time = parsedTimes[timeIndex];
 
         final scheduledDate = tz.TZDateTime(
           tz.local,
           baseDate.year,
           baseDate.month,
           baseDate.day,
-          hour,
-          minute,
+          time.hour,
+          time.minute,
         );
 
         if (!scheduledDate.isAfter(now)) continue;
 
         await _scheduleNotification(
-          id: 1000 + dayOffset * 1000 + timeIndex,
+          id:
+              _notificationIdBase +
+              dayOffset * _notificationIdDayStride +
+              timeIndex,
           scheduledDate: scheduledDate,
           title: _getTitle(settings.language),
           body: _getBody(settings.language),
-          matchDateTimeComponents: null,
         );
       }
     }
@@ -164,7 +167,6 @@ class NotificationService {
     required tz.TZDateTime scheduledDate,
     required String title,
     required String body,
-    required DateTimeComponents? matchDateTimeComponents,
   }) async {
     const androidDetails = AndroidNotificationDetails(
       'water_reminder',
@@ -200,8 +202,20 @@ class NotificationService {
           : AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: matchDateTimeComponents,
+      matchDateTimeComponents: null,
     );
+  }
+
+  ({int hour, int minute})? _parseTime(String rawTime) {
+    final parts = rawTime.split(':');
+    if (parts.length != 2) return null;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return (hour: hour, minute: minute);
   }
 
   String _getTitle(String language) {
