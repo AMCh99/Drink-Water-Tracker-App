@@ -20,6 +20,24 @@ So I decided to build my own personal solution - a clean, ad-free app without an
 
 This is the first version of the app. I plan to continue developing it and adding new features over time.
 
+## MVP Features
+
+- Quick water logging with predefined buttons
+- Custom amount creation and favorite amount shortcuts
+- Daily hydration goal tracking with animated progress ring
+- Intake history with quick add-again and delete actions
+- Weekly, monthly, and yearly statistics views
+- Streak tracking and trend charts
+- CSV export for drinking history
+- PDF export for statistics report
+- Local reminder notifications with custom reminder times
+- Optional in-app sound feedback when adding water
+- Light, Dark, and OLED themes
+- Language switch (Polish and English)
+- Unit switch (ml and oz)
+- Android home screen widgets with hydration summary
+- Local offline data storage (no account required)
+
 ## Technology Stack
 
 - Flutter
