@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Espresso cup / shot glass - smallest -->
-  <path d="M8 8L9 20C9 21.1 9.9 22 11 22H13C14.1 22 15 21.1 15 20L16 8"/>
-  <line x1="7" y1="8" x2="17" y2="8"/>
-  <path d="M10 12h4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 7.5h8"/>
+  <path d="M8.8 7.5l0.8 11.3a2.2 2.2 0 0 0 2.2 2h0.4a2.2 2.2 0 0 0 2.2-2l0.8-11.3"/>
+  <path d="M9.6 12.2c0.7 0.6 4.1 0.6 4.8 0"/>
 </svg>

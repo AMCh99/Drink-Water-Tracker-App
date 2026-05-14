@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Tall glass / szklanka wysoka -->
-  <path d="M8 2L7 20C7 21.1 7.9 22 9 22H15C16.1 22 17 21.1 17 20L16 2"/>
-  <line x1="7" y1="2" x2="17" y2="2"/>
-  <path d="M8.2 13h7.6"/>
-  <path d="M8 8h8"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M6.9 2.6h10.2"/>
+  <path d="M6.9 2.6l1 16.8a2.4 2.4 0 0 0 2.4 2.2h3.4a2.4 2.4 0 0 0 2.4-2.2l1-16.8"/>
+  <path d="M8.6 9.1c1.3 0.8 5.5 0.8 6.8 0"/>
+  <path d="M8.9 14.4c1.1 0.7 4.9 0.7 6 0"/>
 </svg>

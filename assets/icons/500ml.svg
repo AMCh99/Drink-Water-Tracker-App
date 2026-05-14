@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Small bottle / mała butelka -->
-  <line x1="10" y1="2" x2="14" y2="2"/>
-  <path d="M14 2V5L16 8V20C16 21.1 15.1 22 14 22H10C8.9 22 8 21.1 8 20V8L10 5V2"/>
-  <path d="M8.5 14h7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M10 1.8h4"/>
+  <path d="M10.4 1.8v2.3L9 6.4V20a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6.4l-1.4-2.3V1.8"/>
+  <path d="M9.8 7h4.4"/>
+  <path d="M9.3 13.5c1 0.7 4.4 0.7 5.4 0"/>
 </svg>

@@ -1,11 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Extra large bottle / bardzo duża butelka 1.5L -->
-  <line x1="10" y1="1" x2="14" y2="1"/>
-  <path d="M14 1V3L18 7V20C18 21.1 17.1 22 16 22H8C6.9 22 6 21.1 6 20V7L10 3V1"/>
-  <path d="M10 3H14"/>
-  <path d="M6.5 10h11"/>
-  <path d="M6.2 13.5h11.6"/>
-  <path d="M6.2 17h11.6"/>
-  <path d="M9 7L10 3"/>
-  <path d="M15 7L14 3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9.8 1.3h4.4"/>
+  <path d="M10 1.3v1.8L6.8 6.7V20a2 2 0 0 0 2 2h6.4a2 2 0 0 0 2-2V6.7L14 3.1V1.3"/>
+  <path d="M10 3.1h4"/>
+  <path d="M8.1 7.6h7.8"/>
+  <path d="M7.2 11.1c1.5 1 6.7 1 8.2 0"/>
+  <path d="M7.1 14.7c1.4 1 6.4 1 7.8 0"/>
+  <path d="M7.2 18.3c1.3 0.9 6 0.9 7.3 0"/>
 </svg>
