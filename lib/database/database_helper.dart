@@ -32,7 +32,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -70,6 +70,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         milliliters INTEGER NOT NULL,
         iconCodePoint INTEGER NOT NULL,
+        iconAsset TEXT,
         order_index INTEGER NOT NULL,
         isFavorite INTEGER NOT NULL DEFAULT 0
       )
@@ -83,6 +84,7 @@ class DatabaseHelper {
       await db.insert('water_buttons', {
         'milliliters': button.milliliters,
         'iconCodePoint': button.icon.codePoint,
+        'iconAsset': button.assetPath,
         'order_index': button.order,
         'isFavorite': button.isFavorite ? 1 : 0,
       });
@@ -104,6 +106,7 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           milliliters INTEGER NOT NULL,
           iconCodePoint INTEGER NOT NULL,
+          iconAsset TEXT,
           order_index INTEGER NOT NULL,
           isFavorite INTEGER NOT NULL DEFAULT 0
         )
@@ -114,6 +117,7 @@ class DatabaseHelper {
         await db.insert('water_buttons', {
           'milliliters': button.milliliters,
           'iconCodePoint': button.icon.codePoint,
+          'iconAsset': button.assetPath,
           'order_index': button.order,
           'isFavorite': button.isFavorite ? 1 : 0,
         });
@@ -181,6 +185,7 @@ class DatabaseHelper {
           await db.insert('water_buttons', {
             'milliliters': ml,
             'iconCodePoint': icon.codePoint,
+            'iconAsset': WaterButton.getAssetForMilliliters(ml),
             'order_index': maxOrder,
             'isFavorite': 0,
           });
@@ -250,6 +255,12 @@ class DatabaseHelper {
           );
         }
       }
+    }
+
+    if (oldVersion < 12) {
+      await db.execute('''
+        ALTER TABLE water_buttons ADD COLUMN iconAsset TEXT
+      ''');
     }
   }
 
@@ -517,9 +528,9 @@ class DatabaseHelper {
             ),
             order: map['order_index'] as int,
             isFavorite: (map['isFavorite'] as int?) == 1,
-            assetPath: WaterButton.getClosestAsset(
-              map['milliliters'] as int,
-            ),
+            assetPath:
+                map['iconAsset'] as String? ??
+                WaterButton.getClosestAsset(map['milliliters'] as int),
           ),
         )
         .toList();
@@ -539,6 +550,7 @@ class DatabaseHelper {
     return await db.insert('water_buttons', {
       'milliliters': button.milliliters,
       'iconCodePoint': button.icon.codePoint,
+      'iconAsset': button.assetPath,
       'order_index': button.order,
       'isFavorite': button.isFavorite ? 1 : 0,
     });
@@ -556,6 +568,7 @@ class DatabaseHelper {
       {
         'milliliters': button.milliliters,
         'iconCodePoint': button.icon.codePoint,
+        'iconAsset': button.assetPath,
         'order_index': button.order,
         'isFavorite': button.isFavorite ? 1 : 0,
       },

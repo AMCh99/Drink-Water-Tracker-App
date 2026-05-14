@@ -24,6 +24,7 @@ class WaterButton {
       'iconCodePoint': icon.codePoint,
       'order': order,
       'isFavorite': isFavorite ? 1 : 0,
+      'iconAsset': assetPath,
     };
   }
 
@@ -34,6 +35,7 @@ class WaterButton {
       icon: IconData(map['iconCodePoint'] as int, fontFamily: 'MaterialIcons'),
       order: map['order'] as int,
       isFavorite: (map['isFavorite'] as int?) == 1,
+      assetPath: map['iconAsset'] as String?,
     );
   }
 
@@ -55,21 +57,30 @@ class WaterButton {
     );
   }
 
-  /// Mapowanie ml → asset SVG ikony
+  static const List<int> iconMlSizes = [
+    100,
+    150,
+    250,
+    300,
+    330,
+    500,
+    650,
+    750,
+    1000,
+    1500,
+  ];
+
+  /// Lista dostępnych assetów SVG dla wyboru ikony.
+  static List<String> getIconAssets() {
+    return iconMlSizes
+        .map((ml) => 'assets/icons/${ml}ml.svg')
+        .toList(growable: false);
+  }
+
+  /// Mapowanie ml → asset SVG ikony.
   static String? getAssetForMilliliters(int ml) {
-    const assetMap = {
-      100: 'assets/icons/100ml.svg',
-      150: 'assets/icons/150ml.svg',
-      250: 'assets/icons/250ml.svg',
-      300: 'assets/icons/300ml.svg',
-      330: 'assets/icons/330ml.svg',
-      500: 'assets/icons/500ml.svg',
-      650: 'assets/icons/650ml.svg',
-      750: 'assets/icons/750ml.svg',
-      1000: 'assets/icons/1000ml.svg',
-      1500: 'assets/icons/1500ml.svg',
-    };
-    return assetMap[ml];
+    if (!iconMlSizes.contains(ml)) return null;
+    return 'assets/icons/${ml}ml.svg';
   }
 
   /// Dla niestandardowych ilości — znajdź najbliższy SVG
@@ -78,10 +89,9 @@ class WaterButton {
     if (exact != null) return exact;
 
     // Znajdź najbliższą ikonę
-    const sizes = [100, 150, 250, 300, 330, 500, 650, 750, 1000, 1500];
-    int closest = sizes.first;
+    int closest = iconMlSizes.first;
     int minDiff = (ml - closest).abs();
-    for (final s in sizes) {
+    for (final s in iconMlSizes) {
       final diff = (ml - s).abs();
       if (diff < minDiff) {
         minDiff = diff;
@@ -108,14 +118,13 @@ class WaterButton {
 
   // Domyślne przyciski — 10 rozmiarów z ikonami SVG
   static List<WaterButton> defaultButtons() {
-    const sizes = [100, 150, 250, 300, 330, 500, 650, 750, 1000, 1500];
     return [
-      for (int i = 0; i < sizes.length; i++)
+      for (int i = 0; i < iconMlSizes.length; i++)
         WaterButton(
-          milliliters: sizes[i],
-          icon: getIconForMilliliters(sizes[i]),
+          milliliters: iconMlSizes[i],
+          icon: getIconForMilliliters(iconMlSizes[i]),
           order: i + 1,
-          assetPath: getAssetForMilliliters(sizes[i]),
+          assetPath: getAssetForMilliliters(iconMlSizes[i]),
         ),
     ];
   }

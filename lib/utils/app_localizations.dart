@@ -33,9 +33,12 @@ class AppLocalizations {
       'en': 'Enter water amount and add as button',
     },
     'amountMl': {'pl': 'Ilość (ml)', 'en': 'Amount (ml)'},
+    'chooseIcon': {'pl': 'Wybierz ikonę', 'en': 'Choose icon'},
     'cancel': {'pl': 'Anuluj', 'en': 'Cancel'},
     'addButton': {'pl': 'Dodaj przycisk', 'en': 'Add button'},
     'addedButton': {'pl': 'Dodano przycisk', 'en': 'Added button'},
+    'deleteButton': {'pl': 'Usuń przycisk', 'en': 'Delete button'},
+    'deletedButton': {'pl': 'Usunięto przycisk', 'en': 'Button removed'},
 
     // ==================== USTAWIENIA ====================
     'settings': {'pl': 'Opcje', 'en': 'Settings'},
